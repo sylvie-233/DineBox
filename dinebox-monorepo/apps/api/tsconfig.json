@@ -1,0 +1,9 @@
+{
+  "extends": "@dinebox/tsconfig/node.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": ["src/**/*.ts"]
+}
