@@ -14,6 +14,7 @@
     "dev:api": "pnpm --filter @dinebox/api dev",
     "dev:web": "pnpm --filter @dinebox/web dev",
     "dev:admin": "pnpm --filter @dinebox/admin dev",
+    "dev:escpos": "pnpm --filter @dinebox/escpos dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

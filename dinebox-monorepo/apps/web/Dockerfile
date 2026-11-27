@@ -15,6 +15,7 @@ RUN npm config set registry "$NPM_REGISTRY" \
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY apps/admin/package.json apps/admin/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/escpos/package.json apps/escpos/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/cache/package.json packages/cache/package.json
 COPY packages/db/package.json packages/db/package.json

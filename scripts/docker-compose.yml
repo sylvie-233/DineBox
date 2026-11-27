@@ -2,6 +2,7 @@
 # DineBox 扫码点餐 · 本地/单机环境编排
 #   MySQL 8.0 + Redis 7.4 + RustFS（S3 兼容）+ API（Hono）
 #   + Web（Next.js 顾客 H5）+ Admin（React 管理/收银端）
+#   + ESC/POS 虚拟打印机（TCP 9100 + 指令解析模拟器）
 #
 # 启动全部：docker compose -f scripts/docker-compose.yml up -d --build
 # 仅基础服务：docker compose -f scripts/docker-compose.yml up -d mysql redis rustfs
@@ -218,6 +219,39 @@ services:
       timeout: 5s
       retries: 6
       start_period: 10s
+    stop_grace_period: 10s
+
+  escpos:
+    # ESC/POS 虚拟打印机：Web 控制台 + 指令解析 + RAW TCP 9100
+    # 宿主机把 TCP 映射为 9102，避免占用真实打印机的 9100；
+    # 商家端打印配置里填写「局域网 IP:9102」即可把任务发到模拟器。
+    build:
+      context: ../dinebox-monorepo
+      dockerfile: apps/escpos/Dockerfile
+    image: dinebox-escpos:local
+    container_name: dinebox-escpos
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      ESC_POS_PORT: 3200
+      ESC_POS_TCP_PORT: 9100
+      ESC_POS_ADVERTISE_PORT: ${ESCPOS_TCP_PORT:-9102}
+      ESC_POS_PUBLIC_HOST: ${ESCPOS_PUBLIC_HOST:-}
+      TZ: Asia/Shanghai
+    ports:
+      - '${ESCPOS_PORT:-8092}:3200'
+      - '${ESCPOS_TCP_PORT:-9102}:9100'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3200/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
     stop_grace_period: 10s
 
 volumes:

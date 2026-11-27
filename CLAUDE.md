@@ -9,14 +9,14 @@ DineBox 扫码点餐系统 v1（最小可用版｜局域网 ESC/POS 打印）。
 - `docs/`：功能清单、功能设计说明、顾客 H5 / 商家端原型、MySQL 数据库设计，是需求与口径的源头。
 - `scripts/`：Docker Compose 编排、初始化 SQL、演示数据生成器。
 - `manage.ps1`：根目录运维入口（启动、日志、初始化、重置、开发模式）。
-- `dinebox-monorepo/`：pnpm + Turborepo 工作区，包含 `apps/api`、`apps/web`（顾客 H5）、`apps/admin`（商家管理 + 收银合并端）与共享 `packages/*`。
+- `dinebox-monorepo/`：pnpm + Turborepo 工作区，包含 `apps/api`、`apps/web`（顾客 H5）、`apps/admin`（商家管理 + 收银合并端）、`apps/escpos`（ESC/POS 虚拟打印机）与共享 `packages/*`。
 
 管理端与收银端是同一个 `apps/admin` 项目，通过登录账号角色与后端菜单权限隔离；顾客 H5 独立部署，不共享登录态。
 
 ## 常用命令
 
 ```powershell
-# 一键构建并启动全部容器（MySQL / Redis / RustFS / API / Web / Admin）
+# 一键构建并启动全部容器（MySQL / Redis / RustFS / API / Web / Admin / ESC/POS 模拟器）
 pwsh ./manage.ps1 up
 
 # 只启动基础服务（推荐本地开发）
@@ -28,13 +28,14 @@ pwsh ./manage.ps1 cli
 pwsh ./manage.ps1 init            # 删除业务库并重跑 01-schema.sql + 02-demo-data.sql
 pwsh ./manage.ps1 reset -Force    # 删除全部数据卷（MySQL / Redis / RustFS）
 
-# 本机三端热更新（需先启动基础服务）
+# 本机四端热更新（需先启动基础服务）
 cd dinebox-monorepo
 pnpm install
 cp apps/api/.env.example apps/api/.env
 pnpm dev:api        # http://localhost:3100
 pnpm dev:web        # http://localhost:3001
 pnpm dev:admin      # http://localhost:3002
+pnpm dev:escpos     # http://localhost:3003（虚拟打印机 TCP 9102）
 
 # 质量检查（当前没有单元测试套件，依赖 typecheck + build + 真实接口联调）
 pnpm typecheck
@@ -42,7 +43,7 @@ pnpm build
 pnpm lint
 ```
 
-容器端口刻意避开常见项目：MySQL `3307`、Redis `6380`、RustFS `9100/9101`、API `3100`、顾客 H5 `8090`、商家端 `8091`。
+容器端口刻意避开常见项目：MySQL `3307`、Redis `6380`、RustFS `9100/9101`、API `3100`、顾客 H5 `8090`、商家端 `8091`、ESC/POS 模拟器控制台 `8092`（虚拟打印机 TCP `9102`，容器内监听 9100）。
 
 演示账号（仅本地种子数据）：`admin / 123456`（管理员）、`cashier01 / 123456`（收银员）。
 
@@ -101,6 +102,7 @@ Hono + `@hono/zod-openapi`，统一响应 `{ code, message, data }`，分页 `{ 
 - `@dinebox/print` 封装 `node-thermal-printer`：模板渲染 → GBK 编码（`FS &` 进入中文模式）→ TCP 9100 发送 → 切纸。
 - 打印触发：顾客下单 → 后厨单；改单 → 后厨单重打；结算 → 结账单；失败可在打印日志重试。
 - 模板占位变量与 `@dinebox/types` 的 `PRINT_TEMPLATE_VARS` 保持一致。
+- 没有实体打印机时，用 `apps/escpos` 模拟：后台打印机 IP 填运行模拟器主机的局域网 IP、端口填 `9102`，下单/结算后浏览器实时出票。
 
 ### 顾客 H5（`apps/web`）
 
@@ -111,6 +113,16 @@ Next.js App Router + React 19 + SWR。单页客户端状态串联「入座 → �
 - 购物车按桌台存入 `sessionStorage`；下单成功后清空。
 - 菜品 / 规格 / 加料价格在前端仅用于展示，最终由后端按数据库当前配置重新计价并快照。
 - 视觉样式从原型提取到 `src/app/globals.css`，组件类名与原型一致。
+
+### ESC/POS 模拟器（`apps/escpos`）
+
+Hono + Vite/React，把真实 ESC/POS 打印任务模拟成网页小票。
+
+- 输入三路统一进内存任务仓库：RAW TCP（默认 `9102`，容器内 9100）、HTTP `POST /api/jobs`、页面手动 HEX / 文本 / `.bin` / 示例。
+- 解析器在 `src/parser/parser.ts`，参考 npos / escpos-tools 的指令表与 AST 思路，产出与设备无关的 `PrintOp`（文本、换行、切纸、条码、二维码、1bpp 位图、钱箱）；未知指令按长度跳过并记 warning，不抛错。
+- 渲染器在 `src/renderer/renderReceipt.ts`，以 203dpi 点为单位布局（58mm 384 点 / 80mm 576 点），Canvas 绘制对齐、倍宽倍高、反白、下划线与切纸标记。
+- 前端通过 SSE（`/api/events`）实时接收任务，四视图：小票预览 / 指令解析 / HEX / 纯文本；支持任务列表、纸张切换与 PNG / .bin 下载。
+- 不落盘、不做鉴权，定位是店内/开发调试工具，不要暴露到公网。
 
 ### 商家端（`apps/admin`）
 

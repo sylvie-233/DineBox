@@ -4,6 +4,8 @@ node_modules
 **/.next
 dist
 **/dist
+dist-server
+**/dist-server
 .turbo
 **/.turbo
 .git

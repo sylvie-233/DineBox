@@ -10,12 +10,14 @@
 - **收银台**：按区域展示桌台实时状态（空闲 / 待结算 / 挂单）、同桌多单、订单检索、改单、单品退菜、挂单 / 恢复、整单取消、抹零与四种线下结算方式。
 - **商家后台**：菜品 / 分类 / 规格 / 加料管理、桌台与区域、单桌 / 批量二维码、打印配置与 ESC/POS 模板、打印日志重打、订单流水 Excel 导出、经营报表、操作日志、账号与角色菜单权限。
 - **局域网打印**：`node-thermal-printer` 生成 ESC/POS 指令，TCP 短连接直连打印机 `IP:9100`，中文 GBK；打印失败只记日志，不阻塞订单。
+- **ESC/POS 模拟器**：`apps/escpos` 提供真实 RAW TCP 9100 / HTTP 打印接入，按 npos / escpos-tools 指令表解析 ESC/POS，在网页中模拟 58mm / 80mm 小票，并展示指令、HEX 与纯文本视图。
 
 ## 技术栈
 
 - **API**：Node.js、Hono、`@hono/zod-openapi`、Zod、MySQL 8（mysql2 + Drizzle）、Redis（缓存 / 限流）、RustFS（S3 兼容，菜品图片）、`node-thermal-printer`。
 - **顾客 H5**：Next.js 15 App Router、React 19、SWR、Tailwind CSS v4。
 - **商家端**：React 19、Vite、React Router、SWR、Zustand、Tailwind CSS v4、`qrcode`。
+- **ESC/POS 模拟器**：Hono + Node `net`（TCP 9100）、Vite + React 19、Canvas 小票渲染、`qrcode` / `JsBarcode`、SSE 实时推送。
 - **工程**：pnpm workspace + Turborepo、TypeScript、ESLint、Docker Compose。
 
 ## 快速开始
@@ -38,6 +40,7 @@ pwsh ./manage.ps1 down                # 停止容器（保留数据卷）
 | 顾客 H5 | <http://localhost:8090/?tk=tk_a1x9k2m4>（示例桌台 A-01） |
 | 商家管理 / 收银 | <http://localhost:8091> |
 | API | <http://localhost:3100>（文档 `/api/docs`，健康检查 `/health`） |
+| ESC/POS 模拟器 | <http://localhost:8092>（虚拟打印机 TCP `9102`） |
 | RustFS 控制台 | <http://localhost:9101> |
 | MySQL | `localhost:3307`（库 `dinebox`，账号 `dinebox` / `123456`） |
 | Redis | `localhost:6380` |
@@ -61,6 +64,7 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev:api        # http://localhost:3100
 pnpm dev:web        # http://localhost:3001
 pnpm dev:admin      # http://localhost:3002
+pnpm dev:escpos     # http://localhost:3003（虚拟打印机 TCP 9102）
 ```
 
 或使用 `pwsh ./manage.ps1 dev`。
@@ -80,7 +84,7 @@ pnpm lint
 DineBox/
 ├── docs/                        # 功能清单、设计说明、原型、数据库设计
 ├── scripts/
-│   ├── docker-compose.yml       # MySQL / Redis / RustFS / API / Web / Admin
+│   ├── docker-compose.yml       # MySQL / Redis / RustFS / API / Web / Admin / ESC/POS 模拟器
 │   ├── init/01-schema.sql       # 建表 + 种子（可执行副本）
 │   ├── init/02-demo-data.sql    # 演示数据（由生成器产出）
 │   └── generate-demo-data.mjs
@@ -90,7 +94,8 @@ DineBox/
     ├── apps/
     │   ├── api/                 # Hono API（routes → controllers → services → sql）
     │   ├── web/                 # 顾客扫码点餐 H5（Next.js）
-    │   └── admin/               # 商家管理 + 收银合并端（React + Vite）
+    │   ├── admin/               # 商家管理 + 收银合并端（React + Vite）
+    │   └── escpos/              # ESC/POS 虚拟打印机（TCP 9100 + 指令解析 + 小票预览）
     └── packages/
         ├── types/               # 共享 DTO、枚举与展示常量
         ├── db/                  # Drizzle schema + mysql2 连接 / 事务封装
@@ -109,6 +114,7 @@ DineBox/
 - 后台「打印配置」中填写名称、IP、端口（默认 9100）与用途（后厨 / 结账单 / 通用），保存后点击「测试」验证。
 - 模板占位变量：`{title}` `{table}` `{order_no}` `{time}` `{items}` `{note}` `{total}` `{off}` `{payable}` `{people}`。
 - 打印为异步短连接；失败只写打印日志，可在日志中重打，不影响下单 / 结算。
+- 没有实体打印机时，可启动 `apps/escpos` 模拟器：容器默认控制台 `8092`、虚拟打印机 TCP `9102`；在后台打印配置中填写「运行模拟器主机的局域网 IP:9102」即可在浏览器中查看真实打印字节渲染出的小票。本地开发执行 `pnpm dev:escpos`（控制台 3003、虚拟打印机 TCP 9102）。
 
 ## 文档
 

@@ -25,7 +25,7 @@
 
 .PARAMETER Target
     操作目标，默认 all（仅容器相关操作使用）：
-      mysql / redis / rustfs / api / web / admin / all
+      mysql / redis / rustfs / api / web / admin / escpos / all
 
 .PARAMETER Force
     reset / init 跳过二次确认；build 禁用缓存。
@@ -64,7 +64,7 @@ param(
     [ValidateSet('up', 'down', 'restart', 'reset', 'build', 'logs', 'cli', 'status', 'init', 'pull', 'dev')]
     [string]$Action = 'status',
 
-    [ValidateSet('mysql', 'redis', 'rustfs', 'api', 'web', 'admin', 'all')]
+    [ValidateSet('mysql', 'redis', 'rustfs', 'api', 'web', 'admin', 'escpos', 'all')]
     [string]$Target = 'all',
 
     [switch]$Force,
@@ -98,10 +98,11 @@ $ContainerNames = @{
     api    = 'dinebox-api'
     web    = 'dinebox-web'
     admin  = 'dinebox-admin'
+    escpos = 'dinebox-escpos'
 }
 
-$AppServices = @('api', 'web', 'admin')
-$AllServices = @('mysql', 'redis', 'rustfs', 'api', 'web', 'admin')
+$AppServices = @('api', 'web', 'admin', 'escpos')
+$AllServices = @('mysql', 'redis', 'rustfs', 'api', 'web', 'admin', 'escpos')
 
 function Get-EnvSetting {
     param(
@@ -127,6 +128,8 @@ $DbPassword = Get-EnvSetting -Key 'MYSQL_PASSWORD' -Default '123456'
 $ApiPort = Get-EnvSetting -Key 'API_PORT' -Default '3100'
 $WebPort = Get-EnvSetting -Key 'WEB_PORT' -Default '8090'
 $AdminPort = Get-EnvSetting -Key 'ADMIN_PORT' -Default '8091'
+$EscposPort = Get-EnvSetting -Key 'ESCPOS_PORT' -Default '8092'
+$EscposTcpPort = Get-EnvSetting -Key 'ESCPOS_TCP_PORT' -Default '9102'
 $MySqlPort = Get-EnvSetting -Key 'MYSQL_PORT' -Default '3307'
 $RedisPort = Get-EnvSetting -Key 'REDIS_PORT' -Default '6380'
 $S3Port = Get-EnvSetting -Key 'S3_PORT' -Default '9100'
@@ -173,6 +176,7 @@ function Show-Addresses {
     Write-Host "  商家管理/收银  http://localhost:$AdminPort"
     Write-Host "  API            http://localhost:$ApiPort  （文档 /api/docs，健康检查 /health）"
     Write-Host "  RustFS 控制台  http://localhost:$S3ConsolePort"
+    Write-Host "  ESC/POS 模拟器 http://localhost:$EscposPort  （虚拟打印机 TCP 端口 $EscposTcpPort）"
     Write-Host "  MySQL          localhost:$MySqlPort  （库 $DbName，账号 $DbUser）"
     Write-Host "  Redis          localhost:$RedisPort"
     Write-Host ''
@@ -264,8 +268,13 @@ function Sync-H5PublicUrl {
 
     $lines = @(Get-Content -LiteralPath $EnvFile -Encoding UTF8)
     $found = $false
+    $foundEscposHost = $false
     $output = foreach ($line in $lines) {
-        if ($line -match '^\s*H5_PUBLIC_URL\s*=') {
+        if ($line -match '^\s*ESCPOS_PUBLIC_HOST\s*=') {
+            $foundEscposHost = $true
+            "ESCPOS_PUBLIC_HOST=$lanIp"
+        }
+        elseif ($line -match '^\s*H5_PUBLIC_URL\s*=') {
             $found = $true
             $current = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
             if (-not $current -or $current -match '^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$') {
@@ -283,6 +292,9 @@ function Sync-H5PublicUrl {
 
     if (-not $found) {
         $output += "H5_PUBLIC_URL=$desired"
+    }
+    if (-not $foundEscposHost) {
+        $output += "ESCPOS_PUBLIC_HOST=$lanIp"
     }
 
     Set-Content -LiteralPath $EnvFile -Value $output -Encoding UTF8
@@ -359,8 +371,8 @@ function Invoke-Dev {
     }
 
     Write-Host ''
-    Write-Host "开发模式：API http://localhost:3100，H5 http://localhost:3001，商家端 http://localhost:3002" -ForegroundColor Cyan
-    Write-Host '按 Ctrl+C 结束三端进程（基础服务容器保持运行，可用 manage.ps1 down 停止）。'
+    Write-Host "开发模式：API http://localhost:3100，H5 http://localhost:3001，商家端 http://localhost:3002，ESC/POS 模拟器 http://localhost:3003" -ForegroundColor Cyan
+    Write-Host '按 Ctrl+C 结束四端进程（基础服务容器保持运行，可用 manage.ps1 down 停止）。'
     Push-Location $MonorepoRoot
     try { & pnpm dev }
     finally { Pop-Location }
