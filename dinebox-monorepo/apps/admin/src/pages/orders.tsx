@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { Download, RefreshCw } from 'lucide-react';
+import { Download, RefreshCw, RotateCcw } from 'lucide-react';
 
 import type { Order, OrderListQuery, OrderListResult, PayMethod } from '@dinebox/types';
 import { ORDER_STATUS_LABELS, PAY_METHOD_LABELS } from '@dinebox/types';
@@ -242,7 +242,7 @@ export function OrdersPage() {
             <option value="custom">自定义区间</option>
           </select>
           {range === 'custom' ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span className="fb-range">
               <input
                 type="date"
                 className="fb-date"
@@ -250,7 +250,7 @@ export function OrdersPage() {
                 max={to}
                 onChange={(event) => setFrom(event.target.value)}
               />
-              <i style={{ fontStyle: 'normal', fontSize: 12, color: 'var(--ink-3)' }}>至</i>
+              <i>至</i>
               <input
                 type="date"
                 className="fb-date"
@@ -290,7 +290,7 @@ export function OrdersPage() {
               <b>¥{formatMoney(summary?.payableAmount ?? 0)}</b>
             </span>
             <button type="button" className="btn sm" onClick={reset}>
-              重置
+              <RotateCcw size={13} /> 重置
             </button>
             <button
               type="button"

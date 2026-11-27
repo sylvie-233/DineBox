@@ -742,3 +742,229 @@ button.table-card .amount, button.table-card .tno { font-variant-numeric: tabula
   .login-brand { display: none; }
   .login-wrap { width: 460px; max-width: 94vw; }
 }
+
+/* ==========================================================================
+   列表页统一：筛选栏 / 表格 / 行操作按钮
+   ========================================================================== */
+.filter-bar {
+  gap: 10px;
+  padding: 12px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.filter-bar input,
+.filter-bar select {
+  height: 36px;
+  border: 1px solid #e3e6ea;
+  border-radius: 10px;
+  background-color: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.filter-bar input:hover,
+.filter-bar select:hover {
+  border-color: #cfd4da;
+}
+.filter-bar input:focus,
+.filter-bar select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(23, 24, 28, 0.06);
+  outline: none;
+}
+.filter-bar select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236f7379' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+.filter-bar .btn,
+.filter-bar .btn.sm {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #e3e6ea;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+.filter-bar .btn:hover:not(:disabled) {
+  border-color: #b9bec5;
+  background: #fff;
+}
+.filter-bar .btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.filter-bar .btn.primary:hover:not(:disabled) {
+  background: #2a2b31;
+  border-color: #2a2b31;
+  filter: none;
+}
+.filter-bar .btn svg {
+  width: 13px;
+  height: 13px;
+}
+.fb-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.fb-range .fb-date {
+  min-width: 132px;
+}
+.fb-range i {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.fb-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.fb-count b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* 表格视觉：表头轻底色、行悬停、统一间距 */
+.tbl {
+  font-size: 13px;
+}
+.tbl th {
+  padding: 10px 12px;
+  background: #fafbfc;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.tbl td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f1f2f4;
+}
+.tbl tbody tr {
+  transition: background 0.12s;
+}
+.tbl tbody tr:hover {
+  background: #fafbfc;
+}
+.tbl tbody tr.rowlink:hover {
+  background: #f6f7f9;
+}
+.tbl tbody tr:last-child td {
+  border-bottom: 0;
+}
+.tbl .inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+/* 表格内文字按钮：统一的紧凑胶囊按钮，危险操作使用 danger */
+.btn-text {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-2);
+  background: #fff;
+  white-space: nowrap;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.btn-text:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: #b9bec5;
+  background: #fff;
+}
+.btn-text.danger {
+  color: var(--price);
+  border-color: #f3d2cb;
+}
+.btn-text.danger:hover:not(:disabled) {
+  color: var(--price);
+  border-color: var(--price);
+  background: #fceaea;
+}
+.btn-text:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-text svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* 分页与按钮焦点 */
+.pager {
+  padding-top: 14px;
+}
+.pg-btn {
+  height: 30px;
+  min-width: 30px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.pg-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+.btn:focus-visible,
+.btn-text:focus-visible,
+.pg-btn:focus-visible {
+  outline: 2px solid rgba(23, 24, 28, 0.22);
+  outline-offset: 1px;
+}
+.card {
+  box-shadow: 0 1px 2px rgba(23, 24, 28, 0.03);
+}
+
+/* 菜品管理标题栏搜索框 */
+.title-search {
+  width: 190px;
+  height: 30px;
+  border: 1px solid #e3e6ea;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.title-search:hover {
+  border-color: #cfd4da;
+}
+.title-search:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 24, 28, 0.06);
+}

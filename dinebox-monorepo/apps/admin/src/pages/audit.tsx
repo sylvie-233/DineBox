@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, RotateCcw } from 'lucide-react';
 
 import type {
   AuditLogRow,
@@ -177,7 +177,7 @@ export function AuditPage() {
             <option value="custom">自定义区间</option>
           </select>
           {range === 'custom' ? (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+            <span className="fb-range">
               <input
                 type="date"
                 className="fb-date"
@@ -185,7 +185,7 @@ export function AuditPage() {
                 max={to}
                 onChange={(event) => setFrom(event.target.value)}
               />
-              <i style={{ fontStyle: 'normal', fontSize: 12, color: 'var(--ink-3)' }}>至</i>
+              <i>至</i>
               <input
                 type="date"
                 className="fb-date"
@@ -224,7 +224,7 @@ export function AuditPage() {
               共 <b>{data?.summary.count ?? 0}</b> 条 · 操作人 <b>{data?.summary.operators ?? 0}</b> 位
             </span>
             <button type="button" className="btn sm" onClick={reset}>
-              重置
+              <RotateCcw size={13} /> 重置
             </button>
           </div>
         </div>
@@ -247,7 +247,7 @@ export function AuditPage() {
                     <th>操作对象</th>
                     <th>详情</th>
                     <th>IP</th>
-                    <th style={{ width: 96 }}>操作</th>
+                    <th style={{ width: 112 }}>操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -277,8 +277,7 @@ export function AuditPage() {
                           </button>
                           <button
                             type="button"
-                            className="btn-text"
-                            style={{ color: 'var(--price)' }}
+                            className="btn-text danger"
                             onClick={() => void remove(log.id)}
                           >
                             删除

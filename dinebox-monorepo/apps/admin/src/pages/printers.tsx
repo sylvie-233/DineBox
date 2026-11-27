@@ -387,8 +387,7 @@ export function PrintersPage() {
                           </button>
                           <button
                             type="button"
-                            className="btn-text"
-                            style={{ color: 'var(--price)' }}
+                            className="btn-text danger"
                             onClick={() => void deletePrinter(printer)}
                           >
                             删除
@@ -549,7 +548,7 @@ export function PrintersPage() {
                   setLogStatus('');
                 }}
               >
-                重置
+                <RotateCcw size={13} /> 重置
               </button>
             </div>
           </div>
@@ -570,7 +569,7 @@ export function PrintersPage() {
                       <th>单据类型</th>
                       <th>状态</th>
                       <th>失败原因</th>
-                      <th style={{ width: 160 }}>操作</th>
+                      <th style={{ width: 180 }}>操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -617,8 +616,7 @@ export function PrintersPage() {
                             </button>
                             <button
                               type="button"
-                              className="btn-text"
-                              style={{ color: 'var(--price)' }}
+                              className="btn-text danger"
                               onClick={() => void deleteLog(row)}
                             >
                               删除

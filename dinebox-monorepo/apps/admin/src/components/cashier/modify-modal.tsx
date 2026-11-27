@@ -350,8 +350,7 @@ export function ModifyModal({
                 </div>
                 <button
                   type="button"
-                  className="btn-text"
-                  style={{ color: 'var(--price)' }}
+                  className="btn-text danger"
                   onClick={() =>
                     setNewItems((previous) => previous.filter((entry) => entry.key !== item.key))
                   }

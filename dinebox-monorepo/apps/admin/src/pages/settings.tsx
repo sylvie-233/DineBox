@@ -331,7 +331,7 @@ export function SettingsPage() {
                   setRoundOffRule(event.target.value as 'ANGLE' | 'ANGLE5' | 'NONE')
                 }
                 style={{
-                  width: 230,
+                  width: 260,
                   height: 34,
                   border: '1px solid var(--line)',
                   borderRadius: 9,
@@ -364,7 +364,7 @@ export function SettingsPage() {
                   <th>姓名</th>
                   <th>角色</th>
                   <th>状态</th>
-                  <th style={{ width: 130 }}>操作</th>
+                  <th style={{ width: 142 }}>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,8 +393,7 @@ export function SettingsPage() {
                         {row.id !== user?.id ? (
                           <button
                             type="button"
-                            className="btn-text"
-                            style={{ color: row.status === 'ENABLED' ? 'var(--price)' : undefined }}
+                            className={`btn-text ${row.status === 'ENABLED' ? 'danger' : ''}`}
                             onClick={() => void toggleUserStatus(row)}
                           >
                             {row.status === 'ENABLED' ? '禁用' : '启用'}

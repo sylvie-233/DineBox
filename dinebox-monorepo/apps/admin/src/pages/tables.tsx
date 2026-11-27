@@ -37,6 +37,10 @@ const STATUS_TAGS: Record<LiveTableStatus, string> = {
   HUNG: 'tag hold',
 };
 
+function isLocalhostLink(link: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(link);
+}
+
 function downloadDataUrl(dataUrl: string, filename: string): void {
   const anchor = document.createElement('a');
   anchor.href = dataUrl;
@@ -534,6 +538,12 @@ export function TablesPage() {
             >
               {qrTable.qrLink}
             </div>
+            {isLocalhostLink(qrTable.qrLink) ? (
+              <div className="danger-note" style={{ textAlign: 'left' }}>
+                当前链接使用 localhost，手机无法打开。请把 scripts/.env 中的 H5_PUBLIC_URL 改为本机局域网 IP
+                （如 http://本机局域网IP:8090），再重启 API 容器。
+              </div>
+            ) : null}
           </div>
         ) : null}
       </Modal>
@@ -560,9 +570,14 @@ export function TablesPage() {
         }
       >
         <div className="form-hint" style={{ marginTop: 0, marginBottom: 12 }}>
-          共 {tables.length} 张桌台二维码。打印桌贴后张贴在桌面，顾客扫码即带桌号进入点餐页；
-          手机扫码需把 H5_PUBLIC_URL 配为店内局域网 IP。
+          共 {tables.length} 张桌台二维码。打印桌贴后张贴在桌面，顾客扫码即带桌号进入点餐页。
         </div>
+        {tables.some((table) => isLocalhostLink(table.qrLink)) ? (
+          <div className="danger-note" style={{ marginTop: 0, marginBottom: 12 }}>
+            部分二维码仍使用 localhost，手机无法扫描。请执行 pwsh ./manage.ps1 up 自动识别局域网 IP，
+            或手动修改 scripts/.env 的 H5_PUBLIC_URL 后重启 API。
+          </div>
+        ) : null}
         {bulkQrs.length === 0 ? (
           <LoadingRows rows={3} />
         ) : (
@@ -645,8 +660,7 @@ function OrderedTableTable({
                   </button>
                   <button
                     type="button"
-                    className="btn-text"
-                    style={{ color: 'var(--price)' }}
+                    className="btn-text danger"
                     onClick={() => onDelete(table)}
                   >
                     删除

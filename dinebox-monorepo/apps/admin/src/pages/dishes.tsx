@@ -518,14 +518,7 @@ export function DishesPage() {
                 <input
                   value={keyword}
                   placeholder="搜索菜品名称 / 分类"
-                  style={{
-                    width: 180,
-                    height: 32,
-                    border: '1px solid var(--line)',
-                    borderRadius: 9,
-                    padding: '0 10px',
-                    fontSize: 13,
-                  }}
+                  className="title-search"
                   onChange={(event) => setKeyword(event.target.value)}
                 />
                 <button type="button" className="btn sm" onClick={() => setAddonOpen(true)}>
@@ -556,7 +549,7 @@ export function DishesPage() {
                       <th>规格 / 加料</th>
                       <th>排序</th>
                       <th>状态</th>
-                      <th style={{ width: 210 }}>操作</th>
+                      <th style={{ width: 238 }}>操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -606,7 +599,7 @@ export function DishesPage() {
                               className="btn-text"
                               onClick={() => void toggleDish(dish, { soldOut: !dish.soldOut })}
                             >
-                              {dish.soldOut ? '取消售罄' : '标记售罄'}
+                              {dish.soldOut ? '恢复售卖' : '售罄'}
                             </button>
                             <button
                               type="button"
@@ -621,8 +614,7 @@ export function DishesPage() {
                             </button>
                             <button
                               type="button"
-                              className="btn-text"
-                              style={{ color: 'var(--price)' }}
+                              className="btn-text danger"
                               onClick={() => void deleteDish(dish)}
                             >
                               删除
@@ -1072,8 +1064,7 @@ export function DishesPage() {
                       </button>
                       <button
                         type="button"
-                        className="btn-text"
-                        style={{ color: 'var(--price)' }}
+                        className="btn-text danger"
                         onClick={() => void deleteAddon(addon)}
                       >
                         删除
