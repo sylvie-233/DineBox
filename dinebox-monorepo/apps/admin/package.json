@@ -1,0 +1,42 @@
+{
+  "name": "@dinebox/admin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DineBox 商家管理/收银端（React + Vite）",
+  "scripts": {
+    "dev": "vite --port 3002",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 3002",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "@dinebox/types": "workspace:*",
+    "@dinebox/ui": "workspace:*",
+    "@dinebox/utils": "workspace:*",
+    "lucide-react": "^0.468.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1",
+    "swr": "^2.5.1",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@dinebox/eslint-config": "workspace:*",
+    "@dinebox/tsconfig": "workspace:*",
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/node": "^22.10.5",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.18.0",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}
