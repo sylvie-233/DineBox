@@ -968,3 +968,26 @@ button.table-card .amount, button.table-card .tno { font-variant-numeric: tabula
   outline: none;
   box-shadow: 0 0 0 3px rgba(23, 24, 28, 0.06);
 }
+
+/* 所有按钮统一 flex 布局：图标与文字水平居中，不再上下错位 */
+.btn,
+.btn-dark,
+.btn-text,
+.pg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.btn-text {
+  gap: 4px;
+}
+.btn svg,
+.btn-dark svg,
+.btn-text svg,
+.pg-btn svg {
+  display: block;
+  flex-shrink: 0;
+}
