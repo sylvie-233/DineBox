@@ -1,0 +1,4 @@
+{
+  "extends": "@dinebox/tsconfig/library.json",
+  "include": ["src/**/*.ts"]
+}

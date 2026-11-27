@@ -1,13 +1,26 @@
 {
   "name": "dinebox-monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "private": true,
+  "description": "DineBox 扫码点餐系统 · 顾客 H5 + 商家管理/收银端 + API",
+  "license": "MIT",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9.0.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.32.1"
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter @dinebox/api dev",
+    "dev:web": "pnpm --filter @dinebox/web dev",
+    "dev:admin": "pnpm --filter @dinebox/admin dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "turbo": "^2.5.0"
+  }
 }

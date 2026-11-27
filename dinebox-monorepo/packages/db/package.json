@@ -1,0 +1,37 @@
+{
+  "name": "@dinebox/db",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DineBox 共享数据库层：MySQL 连接池、参数化查询与事务封装",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.6",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@dinebox/eslint-config": "workspace:*",
+    "@dinebox/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,2 +1,5 @@
 .workbuddy/
 .claude/
+scripts/.env
+dinebox-monorepo/**/.env
+dinebox-monorepo/**/.env.local

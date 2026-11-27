@@ -1,0 +1,35 @@
+{
+  "name": "@dinebox/print",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DineBox 局域网打印层：ESC/POS 模板渲染 + node-thermal-printer TCP 9100 直连",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist .turbo",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "node-thermal-printer": "^4.6.1"
+  },
+  "devDependencies": {
+    "@dinebox/eslint-config": "workspace:*",
+    "@dinebox/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3"
+  }
+}
