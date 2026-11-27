@@ -23,7 +23,13 @@ import type {
 import { calcRoundOff, round2 } from '@dinebox/utils';
 import * as XLSX from 'xlsx';
 
-import { dbClient, executeOn, queryOn, queryOneOn } from '../../db/index.js';
+import {
+  dbClient,
+  executeOn,
+  queryOn,
+  queryOneOn,
+  type TransactionConnection,
+} from '../../db/index.js';
 import { HttpError } from '../../utils/http.js';
 import { moduleLogger } from '../../utils/logger.js';
 import { buildOrderNo, temporaryOrderNo } from '../../utils/order-no.js';
@@ -49,7 +55,13 @@ import {
   updateOrderNoQuery,
   updateOrderRemarkQuery,
 } from '../../sql/order.sql.js';
-import { tableByTokenQuery } from '../../sql/table.sql.js';
+import {
+  countPendingTableOrdersQuery,
+  countSessionOrdersQuery,
+  lockTableByTokenQuery,
+  lockTableRowQuery,
+  updateTableSessionQuery,
+} from '../../sql/table.sql.js';
 import { writeOperationLog } from '../audit.service.js';
 import { getShopConfig } from '../config.service.js';
 import {
@@ -63,7 +75,7 @@ import {
   recalcOrderTotal,
   type ItemSnapshot,
 } from '../order.repository.js';
-import { getTableByToken } from './table.service.js';
+import { generateSessionToken, getTableSessionByToken } from './table.service.js';
 import { dispatchOrderPrint } from './print.service.js';
 
 const log = moduleLogger('order');
@@ -86,14 +98,42 @@ function summaryOfOrder(order: Order): string {
 
 export async function createOrder(input: CreateOrderInput, ip: string | null): Promise<Order> {
   const created = await dbClient.transaction(async (conn) => {
-    const tableQuery = tableByTokenQuery(input.tableToken);
-    const table = await queryOneOn<{ id: number; name: string }>(
+    const tableQuery = lockTableByTokenQuery(input.tableToken);
+    const table = await queryOneOn<{ id: number; name: string; sessionToken: string }>(
       conn,
       tableQuery.sql,
       tableQuery.params,
     );
     if (!table) {
       throw new HttpError(404, '桌台二维码无效，请联系服务员重新扫码');
+    }
+
+    let sessionToken = table.sessionToken;
+    if (!sessionToken) {
+      sessionToken = generateSessionToken();
+      const updateSession = updateTableSessionQuery(table.id, sessionToken);
+      await executeOn(conn, updateSession.sql, updateSession.params);
+    } else {
+      // 兜底：空闲桌台若仍挂着上一轮的已结清订单，先切换会话再写入本单。
+      const pendingQuery = countPendingTableOrdersQuery(table.id);
+      const pending = await queryOneOn<{ total: number }>(
+        conn,
+        pendingQuery.sql,
+        pendingQuery.params,
+      );
+      if (Number(pending?.total ?? 0) === 0) {
+        const sessionOrdersQuery = countSessionOrdersQuery(table.id, sessionToken);
+        const sessionOrders = await queryOneOn<{ total: number }>(
+          conn,
+          sessionOrdersQuery.sql,
+          sessionOrdersQuery.params,
+        );
+        if (Number(sessionOrders?.total ?? 0) > 0) {
+          sessionToken = generateSessionToken();
+          const updateSession = updateTableSessionQuery(table.id, sessionToken);
+          await executeOn(conn, updateSession.sql, updateSession.params);
+        }
+      }
     }
 
     const dishIds = [...new Set(input.items.map((item) => item.dishId))];
@@ -104,6 +144,7 @@ export async function createOrder(input: CreateOrderInput, ip: string | null): P
       tableId: table.id,
       peopleCount: input.peopleCount,
       remark: input.remark ?? '',
+      sessionToken,
     });
     const inserted = await executeOn(conn, insert.sql, insert.params);
     const orderId = inserted.insertId;
@@ -292,10 +333,13 @@ export async function listTableOptions(): Promise<
   return dbClient.query(query.sql, query.params);
 }
 
-/** 顾客端“我的订单”：当前桌台近 7 天与全部未结订单。 */
+/** 顾客端“本桌订单”：当前桌台本次就餐会话（同桌共享）。 */
 export async function listPublicOrders(tableToken: string): Promise<PublicOrderListItem[]> {
-  const table = await getTableByToken(tableToken);
-  const idQuery = publicOrderIdsQuery(table.id);
+  const table = await getTableSessionByToken(tableToken);
+  if (!table.sessionToken) {
+    return [];
+  }
+  const idQuery = publicOrderIdsQuery(table.id, table.sessionToken);
   const rows = await dbClient.query<{ id: number }>(idQuery.sql, idQuery.params);
   const details = await loadOrderDetails(rows.map((row) => row.id));
   return rows
@@ -319,11 +363,14 @@ export async function listPublicOrders(tableToken: string): Promise<PublicOrderL
 
 /** 顾客端订单详情：必须属于扫码桌台。 */
 export async function getPublicOrder(tableToken: string, orderNo: string): Promise<Order> {
-  const table = await getTableByToken(tableToken);
-  const query = orderByNoAndTableQuery(orderNo, table.id);
+  const table = await getTableSessionByToken(tableToken);
+  if (!table.sessionToken) {
+    throw new HttpError(404, '本次就餐暂无订单');
+  }
+  const query = orderByNoAndTableQuery(orderNo, table.id, table.sessionToken);
   const row = await dbClient.queryOne<{ id: number }>(query.sql, query.params);
   if (!row) {
-    throw new HttpError(404, '订单不存在或不属于当前桌台');
+    throw new HttpError(404, '订单不存在或不属于本次就餐');
   }
   const order = await loadOrderDetail(row.id);
   if (!order) {
@@ -547,6 +594,23 @@ async function setHung(
   return order;
 }
 
+async function rotateTableSessionIfIdle(
+  conn: TransactionConnection,
+  tableId: number,
+): Promise<void> {
+  const pendingQuery = countPendingTableOrdersQuery(tableId);
+  const pending = await queryOneOn<{ total: number }>(
+    conn,
+    pendingQuery.sql,
+    pendingQuery.params,
+  );
+  if (Number(pending?.total ?? 0) > 0) {
+    return;
+  }
+  const update = updateTableSessionQuery(tableId, generateSessionToken());
+  await executeOn(conn, update.sql, update.params);
+}
+
 export async function cancelOrder(
   id: number,
   operator: { id: number; username: string },
@@ -558,8 +622,17 @@ export async function cancelOrder(
       throw new HttpError(404, '订单不存在');
     }
     assertEditable(current);
+    const tableLock = lockTableRowQuery(current.tableId);
+    const table = await queryOneOn<{ id: number }>(
+      conn,
+      tableLock.sql,
+      tableLock.params,
+    );
     const update = cancelOrderQuery(id);
     await executeOn(conn, update.sql, update.params);
+    if (table) {
+      await rotateTableSessionIfIdle(conn, current.tableId);
+    }
     return { orderNo: current.orderNo };
   });
   const order = await getOrder(id);
@@ -597,6 +670,13 @@ export async function settleOrder(
       throw new HttpError(409, '挂单订单请先恢复为待结算再结算');
     }
 
+    const tableLock = lockTableRowQuery(current.tableId);
+    const table = await queryOneOn<{ id: number }>(
+      conn,
+      tableLock.sql,
+      tableLock.params,
+    );
+
     const total = await recalcOrderTotal(conn, id);
     const off = calcRoundOff(total, rule);
     const payable = round2(total - off);
@@ -609,6 +689,9 @@ export async function settleOrder(
       operatorId: operator.id,
     });
     await executeOn(conn, update.sql, update.params);
+    if (table) {
+      await rotateTableSessionIfIdle(conn, current.tableId);
+    }
     return { orderNo: current.orderNo, off, payable };
   });
 

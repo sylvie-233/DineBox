@@ -148,7 +148,7 @@ export function MenuView({
             </div>
           </div>
           <button type="button" className="top-order-btn" onClick={onShowOrders}>
-            我的订单
+            本桌订单
           </button>
         </div>
         <div className="notice">

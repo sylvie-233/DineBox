@@ -48,7 +48,7 @@ export function pendingOrdersQuery(): SqlQuery {
 export function tableByTokenQuery(token: string): SqlQuery {
   return {
     sql: `SELECT t.id, t.table_name AS name, a.area_name AS areaName, t.seats,
-                 t.qr_token AS qrToken
+                 t.qr_token AS qrToken, t.session_token AS sessionToken
             FROM dining_table t
             JOIN dining_area a ON a.id = t.area_id AND a.is_deleted = 0
            WHERE t.qr_token = ? AND t.is_deleted = 0
@@ -101,4 +101,47 @@ export function neighborAreaQuery(
 
 export function updateAreaSortQuery(id: number, sort: number): SqlQuery {
   return { sql: `UPDATE dining_area SET sort = ? WHERE id = ?`, params: [sort, id] };
+}
+
+/** 下单事务内锁定桌台并读取当前就餐会话。 */
+export function lockTableByTokenQuery(token: string): SqlQuery {
+  return {
+    sql: `SELECT id, table_name AS name, session_token AS sessionToken
+            FROM dining_table
+           WHERE qr_token = ? AND is_deleted = 0
+           LIMIT 1
+             FOR UPDATE`,
+    params: [token],
+  };
+}
+
+/** 结账/取消事务内锁定桌台行，保证会话切换与新建订单串行。 */
+export function lockTableRowQuery(tableId: number): SqlQuery {
+  return {
+    sql: `SELECT id, session_token AS sessionToken FROM dining_table WHERE id = ? LIMIT 1 FOR UPDATE`,
+    params: [tableId],
+  };
+}
+
+/** 桌台当前仍有多少待结算订单。 */
+export function countPendingTableOrdersQuery(tableId: number): SqlQuery {
+  return {
+    sql: `SELECT COUNT(*) AS total FROM orders WHERE table_id = ? AND status = 'PENDING'`,
+    params: [tableId],
+  };
+}
+
+export function updateTableSessionQuery(tableId: number, sessionToken: string): SqlQuery {
+  return {
+    sql: `UPDATE dining_table SET session_token = ? WHERE id = ?`,
+    params: [sessionToken, tableId],
+  };
+}
+
+/** 桌台当前会话下是否已有历史订单（用于空闲桌台首次下单时做会话兜底切换）。 */
+export function countSessionOrdersQuery(tableId: number, sessionToken: string): SqlQuery {
+  return {
+    sql: `SELECT COUNT(*) AS total FROM orders WHERE table_id = ? AND session_token = ?`,
+    params: [tableId, sessionToken],
+  };
 }

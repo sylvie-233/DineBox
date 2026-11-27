@@ -77,6 +77,11 @@ function generateQrToken(): string {
   return `tk_${randomBytes(6).toString('hex')}`;
 }
 
+/** 桌台就餐会话令牌：同桌顾客共享；结清/取消后由订单服务换新。 */
+export function generateSessionToken(): string {
+  return `ts_${randomBytes(16).toString('hex')}`;
+}
+
 /* ========================= 区域 ========================= */
 
 export async function listAreas(): Promise<DiningArea[]> {
@@ -334,6 +339,7 @@ export async function saveTable(
       tableName: input.name,
       seats: input.seats ?? null,
       qrToken,
+      sessionToken: generateSessionToken(),
     });
     id = result.insertId;
   }
@@ -392,6 +398,24 @@ export async function getTableByToken(token: string): Promise<PublicTableInfo> {
     areaName: string;
     seats: number | null;
     qrToken: string;
+    sessionToken: string;
+  }>(query.sql, query.params);
+  if (!row) {
+    throw new HttpError(404, '桌台二维码无效，请联系服务员重新扫码');
+  }
+  const { sessionToken: _sessionToken, ...publicTable } = row;
+  return publicTable;
+}
+
+/** 内部使用：读取桌台当前就餐会话（不对外暴露）。 */
+export async function getTableSessionByToken(
+  token: string,
+): Promise<{ id: number; name: string; sessionToken: string }> {
+  const query = tableByTokenQuery(token);
+  const row = await dbClient.queryOne<{
+    id: number;
+    name: string;
+    sessionToken: string;
   }>(query.sql, query.params);
   if (!row) {
     throw new HttpError(404, '桌台二维码无效，请联系服务员重新扫码');

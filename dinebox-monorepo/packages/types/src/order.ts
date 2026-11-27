@@ -134,7 +134,7 @@ export interface OrderListQuery {
   pageSize?: number;
 }
 
-/** 顾客端“我的订单”列表项（按桌台维度）。 */
+/** 顾客端“本桌订单”列表项（当前桌台 + 本次就餐会话）。 */
 export interface PublicOrderListItem {
   id: number;
   orderNo: string;

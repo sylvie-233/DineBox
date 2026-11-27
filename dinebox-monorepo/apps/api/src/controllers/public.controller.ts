@@ -1,4 +1,4 @@
-/** 顾客端控制器：启动数据、桌台校验、下单与我的订单。 */
+/** 顾客端控制器：启动数据、桌台校验、下单与本桌订单。 */
 import type {
   CreateOrderInput,
 } from '@dinebox/types';

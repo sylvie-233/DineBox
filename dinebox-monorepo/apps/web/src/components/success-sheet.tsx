@@ -38,7 +38,7 @@ export function SuccessSheet({
       footer={
         <>
           <button type="button" className="btn-plain" onClick={onViewOrders}>
-            查看订单
+            查看本桌订单
           </button>
           <button type="button" className="btn-primary" onClick={onContinue}>
             继续点餐

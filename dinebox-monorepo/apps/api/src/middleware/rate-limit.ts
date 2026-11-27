@@ -129,7 +129,7 @@ export const createOrderLimit = rateLimit({
   message: '下单过于频繁，请稍后再试',
 });
 
-/** 顾客“我的订单”查询：同 IP 每分钟 60 次。 */
+/** 顾客“本桌订单”查询：同 IP 每分钟 60 次。 */
 export const publicQueryLimit = rateLimit({
   name: 'public:query:ip',
   limit: 60,

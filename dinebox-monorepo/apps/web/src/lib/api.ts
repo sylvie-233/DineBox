@@ -54,15 +54,15 @@ export const publicApi = {
   table(tableToken: string): Promise<PublicTableInfo> {
     return request(`/table?tk=${encodeURIComponent(tableToken)}`);
   },
-  /** 提交订单。 */
+  /** 提交订单（服务端按桌台当前就餐会话归属）。 */
   createOrder(input: CreateOrderInput): Promise<Order> {
     return request('/orders', { method: 'POST', body: JSON.stringify(input) });
   },
-  /** 当前桌台的订单列表。 */
+  /** 当前桌台本次就餐会话的订单列表。 */
   orders(tableToken: string): Promise<PublicOrderListItem[]> {
     return request(`/orders?tk=${encodeURIComponent(tableToken)}`);
   },
-  /** 当前桌台的订单详情。 */
+  /** 当前桌台本次就餐会话的订单详情。 */
   order(tableToken: string, orderNo: string): Promise<Order> {
     return request(
       `/orders/${encodeURIComponent(orderNo)}?tk=${encodeURIComponent(tableToken)}`,

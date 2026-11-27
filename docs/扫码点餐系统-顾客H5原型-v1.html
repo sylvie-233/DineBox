@@ -925,7 +925,7 @@
         <div class="shop-name" id="shopNameEl">灶火人家·家常菜</div>
         <div class="shop-sub" id="shopSubEl">营业中 10:30 - 21:30 ｜ 扫码点餐</div>
       </div>
-      <button class="top-order-btn" onclick="showOrders()">我的订单</button>
+      <button class="top-order-btn" onclick="showOrders()">本桌订单</button>
     </div>
     <div class="notice">
       <span>本店支持扫码点餐，下单后请到前台结账；菜品图片仅供参考，口味需求请在备注中说明。</span>
@@ -963,12 +963,12 @@
 
   </div><!-- /menuView -->
 
-  <!-- 我的订单视图 -->
+  <!-- 本桌订单视图 -->
   <div class="view" id="ordersView">
     <div class="topbar">
       <div class="shop-row">
         <button class="back-btn" onclick="showMenu()">‹</button>
-        <div style="font-size:16px;font-weight:700">我的订单</div>
+        <div style="font-size:16px;font-weight:700">本桌订单</div>
       </div>
     </div>
     <div class="orders-body" id="ordersBody"></div>
@@ -1537,7 +1537,7 @@ function submitOrder() {
   setTimeout(() => openSheet("successSheet"), 160);
 }
 
-/* ================= 我的订单 ================= */
+/* ================= 本桌订单 ================= */
 function showOrders() { renderOrders(); $("menuView").classList.remove("show"); $("ordersView").classList.add("show"); }
 function showMenu() { $("ordersView").classList.remove("show"); $("menuView").classList.add("show"); }
 function orderStatusText(o) { return o.status === "pending" ? "待结算" : "已结清"; }

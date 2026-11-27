@@ -68,7 +68,7 @@ function ScanPrompt({ message, onRetry }: { message?: string; onRetry?: () => vo
   );
 }
 
-/** 顾客点餐 H5 根组件：入座 → 点餐 → 购物车 → 下单 → 我的订单。 */
+/** 顾客点餐 H5 根组件：入座 → 点餐 → 购物车 → 下单 → 本桌订单。 */
 export function OrderApp() {
   const searchParams = useSearchParams();
   const tableToken = searchParams.get('tk')?.trim() ?? '';
@@ -296,7 +296,7 @@ export function OrderApp() {
         <div className="entry">
           <div className="entry-top">
             <div className="entry-logo">
-              <span style={{ fontSize: 24, fontWeight: 900 }}>点</span>
+              <span style={{ fontSize: 24, fontWeight: 900 }}>希</span>
             </div>
             <div className="entry-shop">DineBox 扫码点餐</div>
             <div className="entry-scan">正在加载门店与菜单…</div>

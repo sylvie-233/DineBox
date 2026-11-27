@@ -31,6 +31,7 @@ export const diningTable = mysqlTable(
     tableName: varchar('table_name', { length: 32 }).notNull(),
     seats: int('seats', { unsigned: true }),
     qrToken: varchar('qr_token', { length: 32 }).notNull(),
+    sessionToken: varchar('session_token', { length: 64 }).notNull().default(''),
     createdAt: datetime('created_at', { mode: 'string' })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),

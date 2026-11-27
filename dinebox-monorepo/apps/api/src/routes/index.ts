@@ -36,7 +36,7 @@ router.doc31('/openapi.json', {
   },
   servers: [{ url: '/api', description: '当前服务' }],
   tags: [
-    { name: '顾客端', description: '扫码启动数据、下单与我的订单' },
+    { name: '顾客端', description: '扫码启动数据、下单与本桌订单' },
     { name: '后台 · 认证', description: '登录、当前会话与修改密码' },
     { name: '后台 · 收银台', description: '桌台概览、订单检索、改单/退菜/挂单/取消/结算' },
     { name: '后台 · 菜品', description: '分类、菜品、规格组与加料' },

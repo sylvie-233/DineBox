@@ -122,11 +122,18 @@ export function insertOrderQuery(input: {
   tableId: number;
   peopleCount: number;
   remark: string;
+  sessionToken: string;
 }): SqlQuery {
   return {
-    sql: `INSERT INTO orders (order_no, table_id, people_count, status, remark)
-          VALUES (?, ?, ?, 'PENDING', ?)`,
-    params: [input.temporaryNo, input.tableId, input.peopleCount, input.remark],
+    sql: `INSERT INTO orders (order_no, table_id, people_count, status, remark, session_token)
+          VALUES (?, ?, ?, 'PENDING', ?, ?)`,
+    params: [
+      input.temporaryNo,
+      input.tableId,
+      input.peopleCount,
+      input.remark,
+      input.sessionToken,
+    ],
   };
 }
 
@@ -364,20 +371,23 @@ export function tableOptionsQuery(): SqlQuery {
   };
 }
 
-export function publicOrderIdsQuery(tableId: number): SqlQuery {
+export function publicOrderIdsQuery(tableId: number, sessionToken: string): SqlQuery {
   return {
     sql: `SELECT id FROM orders
-           WHERE table_id = ?
-             AND (status = 'PENDING' OR created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY))
+           WHERE table_id = ? AND session_token = ?
            ORDER BY id DESC
-           LIMIT 30`,
-    params: [tableId],
+           LIMIT 50`,
+    params: [tableId, sessionToken],
   };
 }
 
-export function orderByNoAndTableQuery(orderNo: string, tableId: number): SqlQuery {
+export function orderByNoAndTableQuery(
+  orderNo: string,
+  tableId: number,
+  sessionToken: string,
+): SqlQuery {
   return {
-    sql: `SELECT id FROM orders WHERE order_no = ? AND table_id = ? LIMIT 1`,
-    params: [orderNo, tableId],
+    sql: `SELECT id FROM orders WHERE order_no = ? AND table_id = ? AND session_token = ? LIMIT 1`,
+    params: [orderNo, tableId, sessionToken],
   };
 }

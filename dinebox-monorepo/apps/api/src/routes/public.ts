@@ -1,4 +1,4 @@
-/** 顾客端路由：扫码启动数据、下单与我的订单（无需登录）。 */
+/** 顾客端路由：扫码启动数据、下单与本桌订单（无需登录）。 */
 import { createRoute, z } from '@hono/zod-openapi';
 
 import * as publicController from '../controllers/public.controller.js';
@@ -77,7 +77,7 @@ const myOrdersRoute = createRoute({
   method: 'get',
   path: '/orders',
   tags: ['顾客端'],
-  summary: '当前桌台的订单列表（近 7 天 + 全部未结）',
+  summary: '当前桌台本次就餐会话的订单列表（同桌共享）',
   security: [],
   middleware: [publicQueryLimit],
   request: { query: tableTokenQuerySchema },
@@ -95,7 +95,7 @@ const orderDetailRoute = createRoute({
   method: 'get',
   path: '/orders/{orderNo}',
   tags: ['顾客端'],
-  summary: '当前桌台的订单详情',
+  summary: '当前桌台本次就餐会话的订单详情',
   security: [],
   middleware: [publicQueryLimit],
   request: { params: orderNoParams, query: tableTokenQuerySchema },

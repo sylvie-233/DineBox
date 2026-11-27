@@ -33,6 +33,7 @@ export const orders = mysqlTable(
       .notNull()
       .default('0.00'),
     remark: varchar('remark', { length: 200 }).notNull().default(''),
+    sessionToken: varchar('session_token', { length: 64 }).notNull().default(''),
     payMethod: mysqlEnum('pay_method', ['CASH', 'WECHAT_QR', 'ALIPAY_QR', 'OTHER']),
     settledBy: bigint('settled_by', { mode: 'number', unsigned: true }),
     settledAt: datetime('settled_at', { mode: 'string' }),

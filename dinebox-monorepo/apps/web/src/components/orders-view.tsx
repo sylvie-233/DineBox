@@ -17,7 +17,7 @@ function statusClass(order: PublicOrderListItem): string {
   return 'pending';
 }
 
-/** 我的订单列表（按桌台维度，含未结与近 7 天订单）。 */
+/** 本桌订单列表：当前桌台本次就餐会话（同桌共享）。 */
 export function OrdersView({
   orders,
   loading,
@@ -40,7 +40,8 @@ export function OrdersView({
           <button type="button" className="back-btn" onClick={onBack} aria-label="返回菜单">
             <ChevronLeft size={18} />
           </button>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>我的订单</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>本桌订单</div>
+          <span style={{ fontSize: 11, color: 'var(--ink-3)' }}>本次就餐 · 同桌共享</span>
           <button
             type="button"
             className="top-order-btn"
@@ -66,7 +67,7 @@ export function OrdersView({
         ) : !orders || orders.length === 0 ? (
           <div className="orders-empty">
             <ClipboardList size={44} />
-            <div>还没有订单</div>
+            <div>本次就餐还没有订单</div>
             <div style={{ fontSize: 11, marginTop: 4 }}>返回菜单挑选喜欢的菜品吧</div>
           </div>
         ) : (

@@ -237,6 +237,7 @@ CREATE TABLE `dining_table` (
   `table_name` VARCHAR(32) NOT NULL COMMENT '桌台名称：A-01/A-02',
   `seats`      INT UNSIGNED NULL COMMENT '容纳人数（可选，供展示）',
   `qr_token`   VARCHAR(32) NOT NULL COMMENT '二维码令牌：链接形如 h5?tk={qr_token}，扫码即锁定此桌',
+  `session_token` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '当前就餐会话令牌；同桌顾客共享，结清后换新',
   `created_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '软删除：0否 1是',
@@ -266,6 +267,7 @@ CREATE TABLE `orders` (
   `round_off_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '抹零金额（元，sys_config.round_off_enabled 开关控制）',
   `payable_amount`   DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '应收金额（元）= total_amount - round_off_amount',
   `remark`           VARCHAR(200) NOT NULL DEFAULT '' COMMENT '整单备注（少辣、不要葱等）',
+  `session_token` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '桌台就餐会话令牌（订单创建时写入；结清/取消后桌台换新会话）',
   `pay_method`       ENUM('CASH','WECHAT_QR','ALIPAY_QR','OTHER') NULL COMMENT '结算方式：现金/前台微信静态码/前台支付宝静态码/其他（结算时填写，系统不校验支付结果）',
   `settled_by`       BIGINT UNSIGNED NULL COMMENT '结算操作人 user_id',
   `settled_at`       DATETIME     NULL COMMENT '结算时间',
@@ -275,6 +277,7 @@ CREATE TABLE `orders` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
   KEY `idx_table_status` (`table_id`, `status`),
+  KEY `idx_table_session` (`table_id`, `session_token`),
   KEY `idx_status_created` (`status`, `created_at`),
   KEY `idx_created_at` (`created_at`),
   KEY `idx_settled_by` (`settled_by`),
@@ -429,6 +432,8 @@ INSERT INTO `dining_table` (`area_id`, `table_name`, `seats`, `qr_token`) VALUES
   (2, 'B-02',    4, 'tk_e8v4x2k7'), (2, 'B-06', 4, 'tk_f3w7y5m9'),
   (3, 'C-01',    2, 'tk_g6x8z2n4'), (3, 'C-04', 2, 'tk_h9y3a6p8'),
   (4, '包间-01', 10, 'tk_j2z5b8q3');
+
+UPDATE `dining_table` SET `session_token` = CONCAT('ts_', REPLACE(UUID(), '-', '')) WHERE `session_token` = '';
 
 INSERT INTO `dish_category` (`id`, `cat_name`, `sort`) VALUES
   (1, '热销推荐', 1), (3, '招牌主食', 2), (2, '小吃凉菜', 3),
