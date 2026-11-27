@@ -3,8 +3,6 @@
 > 扫码点餐、前台收银、后厨打印一体化的堂食点餐系统。
 > 顾客 H5、商家管理 / 收银合并端、局域网 ESC/POS 打印，Docker Compose 一键部署。
 
-![收银台](docs/screenshots/admin-cashier.png)
-
 ## 功能特性
 
 - **顾客扫码点餐**：桌号由二维码锁定，支持分类、搜索、规格差价、加料限选、购物车与整单备注；「本桌订单」同桌共享当前就餐会话，最后一批未结订单结清 / 取消后自动换新。
@@ -16,9 +14,13 @@
 
 ## 页面预览
 
-| 顾客 H5 · 点餐 | 商家 · 菜品管理 |
+| 顾客 H5 · 点餐 | 收银台 · 桌台与结算 |
 | --- | --- |
-| ![顾客 H5 点餐](docs/screenshots/h5-menu.png) | ![菜品管理](docs/screenshots/admin-dishes.png) |
+| ![顾客 H5 点餐](docs/screenshots/h5-menu.png) | ![收银台](docs/screenshots/admin-cashier.png) |
+
+| 订单流水 | 商家 · 菜品管理 |
+| --- | --- |
+| ![订单流水](docs/screenshots/admin-orders.png) | ![菜品管理](docs/screenshots/admin-dishes.png) |
 
 | 经营报表 | ESC/POS 虚拟打印机 |
 | --- | --- |
