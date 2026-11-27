@@ -7,7 +7,7 @@
  */
 import { randomBytes } from 'node:crypto';
 
-import { and, count, eq, max } from 'drizzle-orm';
+import { and, count, eq, max, ne } from 'drizzle-orm';
 
 import type {
   AreaGroup,
@@ -295,10 +295,11 @@ export async function saveTable(
       and(
         eq(schema.diningTable.tableName, input.name),
         eq(schema.diningTable.isDeleted, 0),
+        ne(schema.diningTable.id, input.id ?? 0),
       ),
     )
-    .limit(2);
-  if (duplicate && duplicate.id !== input.id) {
+    .limit(1);
+  if (duplicate) {
     throw new HttpError(409, '桌号已存在，请更换');
   }
 

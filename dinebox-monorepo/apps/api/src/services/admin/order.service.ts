@@ -578,7 +578,8 @@ export async function settleOrder(
   ip: string | null,
 ): Promise<Order> {
   const shop = await getShopConfig();
-  const applyRoundOff = input.roundOff ?? shop.roundOffEnabled;
+  // 全局开关优先：关闭抹零时，收银端不得通过传参绕过。
+  const applyRoundOff = shop.roundOffEnabled && (input.roundOff ?? true);
   const rule = applyRoundOff ? shop.roundOffRule : 'NONE';
 
   const result = await dbClient.transaction(async (conn) => {
