@@ -49,7 +49,7 @@ pwsh ./manage.ps1 down                # 停止容器（保留数据卷）
 | `admin` | 管理员 | `123456` |
 | `cashier01` | 收银员 | `123456` |
 
-> 手机扫码需要把 `scripts/.env` 中的 `H5_PUBLIC_URL` 改为店内主机的局域网地址（如 `http://192.168.1.10:8090`），并在后台「桌台管理 → 二维码」中查看对应桌台链接。`localhost` 只能本机打开。
+> `manage.ps1 up` 会自动检测本机局域网 IPv4 并写入 `scripts/.env` 的 `H5_PUBLIC_URL`，后台二维码链接使用该地址（如 `http://192.168.1.10:8090`）。如自动识别不正确，手动修改后执行 `pwsh ./manage.ps1 up -Target api` 重建 API 容器以加载新地址。手机需与门店主机处于同一局域网。
 
 本地热更新开发（仅用容器跑 MySQL / Redis / RustFS）：
 

@@ -50,7 +50,7 @@ pnpm lint
 
 - API 环境变量：`apps/api/.env`（参考 `.env.example`）。容器环境变量集中在 `scripts/docker-compose.yml`，可写入 `scripts/.env`。
 - 顾客 H5 与商家端开发代理都指向 `http://127.0.0.1:3100`；容器内分别通过 Next rewrites / Nginx 代理到 `api:3100`。
-- `H5_PUBLIC_URL` 决定后台二维码链接（`${H5_PUBLIC_URL}/?tk=<qr_token>`）。手机扫码时必须改成店内主机的局域网 IP，`localhost` 只能本机打开。
+- `H5_PUBLIC_URL` 决定后台二维码链接（`${H5_PUBLIC_URL}/?tk=<qr_token>`）。`manage.ps1 up / dev` 会自动检测本机局域网 IPv4 并写入 `scripts/.env`（`dev` 同时同步 `apps/api/.env`）；如识别不对，手动修改后执行 `pwsh ./manage.ps1 up -Target api` 重建 API 容器。`localhost` 只能本机打开。
 - 打印机为内网 RAW TCP 9100 / ESC/POS；API 与打印机需同网段，打印机应在路由器绑定静态 IP。API 以异步短连接打印，打印失败只写 `print_log`，不阻塞下单 / 结算。
 - RustFS 保存菜品图片；未配置 `S3_PUBLIC_URL` 时图片通过 `/api/files/:key` 代理读取（仅放行 `dishes/` 前缀）。
 

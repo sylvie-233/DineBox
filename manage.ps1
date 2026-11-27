@@ -176,9 +176,13 @@ function Show-Addresses {
     Write-Host "  MySQL          localhost:$MySqlPort  （库 $DbName，账号 $DbUser）"
     Write-Host "  Redis          localhost:$RedisPort"
     Write-Host ''
-    Write-Host "  二维码 H5 地址（H5_PUBLIC_URL）：$H5PublicUrl"
-    Write-Host '  手机扫码需把 H5_PUBLIC_URL 改为店内主机局域网 IP，如 http://192.168.1.10:8090'
-    Write-Host '  演示账号：admin / 123456（管理员），cashier01 / 123456（收银员）'
+    Write-Host "  手机扫码 H5    $H5PublicUrl/?tk=<桌台二维码令牌>"
+    if ($H5PublicUrl -match '://(localhost|127\.0\.0\.1)(:|/|$)') {
+        Write-Host '  提示：当前 H5_PUBLIC_URL 仍是 localhost，手机无法访问；请执行 manage.ps1 up 自动识别局域网 IP。' -ForegroundColor Yellow
+    }
+    else {
+        Write-Host '  手机需与门店主机处于同一局域网，二维码链接已使用上述地址。'
+    }
     Write-Host ''
 }
 
@@ -208,7 +212,86 @@ function Invoke-SqlFile {
     if ($LASTEXITCODE -ne 0) { throw "执行 SQL 失败：$LocalPath" }
 }
 
+
+function Get-LanIPv4 {
+    # 优先取默认路由出口地址；失败时回退到 Get-NetIPAddress，排除回环 / 容器 / 虚拟机网卡。
+    try {
+        $udp = [System.Net.Sockets.UdpClient]::new()
+        try {
+            $udp.Connect('8.8.8.8', 80)
+            $endpoint = [System.Net.IPEndPoint]$udp.Client.LocalEndPoint
+            $ip = $endpoint.Address.ToString()
+            if ($endpoint.Address.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork -and
+                $ip -and $ip -notmatch '^(127\.|0\.0\.0\.0)') {
+                return $ip
+            }
+        }
+        finally {
+            $udp.Dispose()
+        }
+    }
+    catch {
+        # 忽略，使用网卡枚举兜底。
+    }
+
+    try {
+        $candidates = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
+            Where-Object {
+                $_.IPAddress -notmatch '^(127\.|169\.254\.)' -and
+                $_.InterfaceAlias -notmatch 'Loopback|vEthernet|WSL|Docker|Hyper-V|VirtualBox|VMware|Tailscale|ZeroTier'
+            } |
+            Sort-Object @{ Expression = { if ($_.InterfaceAlias -match 'WLAN|Wi-Fi|Wireless|Ethernet|以太网|无线') { 0 } else { 1 } } }
+        return ($candidates | Select-Object -First 1).IPAddress
+    }
+    catch {
+        return $null
+    }
+}
+
+function Sync-H5PublicUrl {
+    $lanIp = Get-LanIPv4
+    if (-not $lanIp) {
+        Write-Host '未检测到局域网 IPv4，H5_PUBLIC_URL 保持原值。' -ForegroundColor Yellow
+        return
+    }
+
+    $desired = "http://${lanIp}:$WebPort"
+    $resolved = $desired
+
+    if (-not (Test-Path -LiteralPath $EnvFile)) {
+        Copy-Item -LiteralPath (Join-Path $ScriptRoot 'scripts/.env.example') -Destination $EnvFile
+    }
+
+    $lines = @(Get-Content -LiteralPath $EnvFile -Encoding UTF8)
+    $found = $false
+    $output = foreach ($line in $lines) {
+        if ($line -match '^\s*H5_PUBLIC_URL\s*=') {
+            $found = $true
+            $current = ($line -split '=', 2)[1].Trim().Trim('"').Trim("'")
+            if (-not $current -or $current -match '^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$') {
+                "H5_PUBLIC_URL=$desired"
+            }
+            else {
+                $resolved = $current
+                $line
+            }
+        }
+        else {
+            $line
+        }
+    }
+
+    if (-not $found) {
+        $output += "H5_PUBLIC_URL=$desired"
+    }
+
+    Set-Content -LiteralPath $EnvFile -Value $output -Encoding UTF8
+    $script:H5PublicUrl = $resolved
+    Write-Host "二维码 H5 地址：$resolved" -ForegroundColor Green
+}
+
 function Invoke-Up {
+    Sync-H5PublicUrl
     $services = Get-TargetServices
     $args = @('up', '-d', '--build')
     if (-not $NoWait) {
@@ -243,6 +326,7 @@ function Invoke-Init {
 }
 
 function Invoke-Dev {
+    Sync-H5PublicUrl
     if (-not (Get-Command pnpm -ErrorAction SilentlyContinue)) {
         throw '未找到 pnpm 命令，请先安装 Node.js 并执行 corepack enable。'
     }
@@ -255,6 +339,16 @@ function Invoke-Dev {
     if (-not (Test-Path -LiteralPath $apiEnv)) {
         Copy-Item -LiteralPath (Join-Path $MonorepoRoot 'apps/api/.env.example') -Destination $apiEnv
         Write-Host '已复制 apps/api/.env.example → apps/api/.env' -ForegroundColor Green
+    }
+    if ($H5PublicUrl) {
+        $apiLines = @(Get-Content -LiteralPath $apiEnv -Encoding UTF8)
+        $apiOutput = foreach ($line in $apiLines) {
+            if ($line -match '^\s*H5_PUBLIC_URL\s*=') { "H5_PUBLIC_URL=$H5PublicUrl" } else { $line }
+        }
+        if (-not ($apiLines -match '^\s*H5_PUBLIC_URL\s*=')) {
+            $apiOutput += "H5_PUBLIC_URL=$H5PublicUrl"
+        }
+        Set-Content -LiteralPath $apiEnv -Value $apiOutput -Encoding UTF8
     }
 
     if (-not (Test-Path -LiteralPath (Join-Path $MonorepoRoot 'node_modules'))) {
@@ -281,6 +375,7 @@ switch ($Action) {
         Write-Host '容器已停止，数据卷保留。' -ForegroundColor Green
     }
     'restart' {
+        Sync-H5PublicUrl
         $services = Get-TargetServices
         if ($Target -eq 'all') {
             Invoke-Compose -ComposeArgs @('restart')
