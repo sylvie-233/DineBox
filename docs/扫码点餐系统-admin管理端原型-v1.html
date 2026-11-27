@@ -1,0 +1,3252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>扫码点餐 · 商家管理端原型</title>
+<style>
+  :root {
+    --primary: #17181c;
+    --primary-weak: #f2f3f5;
+    --price: #d5432e;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --ink: #17181c;
+    --ink-2: #6f7379;
+    --ink-3: #a0a4ab;
+    --line: #eceef0;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --radius: 12px;
+    --ease: cubic-bezier(.22,.8,.3,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    height: 100vh;
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  input, select, textarea { font-family: inherit; outline: none; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- 登录 ---------- */
+  #loginScreen {
+    height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, var(--bg), #eef0f2);
+    padding: 20px;
+  }
+  .login-wrap {
+    display: flex; width: 720px; max-width: 94vw;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(23,24,28,.08);
+    animation: fadeUp .4s var(--ease);
+  }
+  .login-brand {
+    width: 280px; flex-shrink: 0;
+    background: var(--primary); color: #fff;
+    padding: 34px 26px;
+    display: flex; flex-direction: column;
+  }
+  .login-brand .mark {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(255,255,255,.14);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+  }
+  .login-brand h1 { font-size: 19px; font-weight: 700; letter-spacing: .5px; }
+  .login-brand .b-sub { font-size: 12px; opacity: .65; margin: 6px 0 26px; }
+  .login-brand .feat { display: flex; align-items: center; gap: 10px; font-size: 12.5px; opacity: .85; padding: 7px 0; }
+  .login-brand .feat i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.45); flex-shrink: 0; }
+  .login-brand .b-foot { margin-top: auto; font-size: 11px; opacity: .45; }
+  .login-form { flex: 1; padding: 34px 32px 28px; display: flex; flex-direction: column; justify-content: center; }
+  .login-title { font-size: 18px; font-weight: 700; }
+  .login-sub { font-size: 12px; color: var(--ink-3); margin: 6px 0 20px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; height: 40px;
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 12px; font-size: 14px;
+    background: var(--card);
+    transition: border-color .15s;
+  }
+  .field textarea { height: auto; padding: 10px 12px; resize: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); }
+  .btn-dark {
+    width: 100%; height: 44px;
+    border: none; border-radius: 10px;
+    background: var(--primary); color: #fff;
+    font-size: 15px; font-weight: 600; letter-spacing: 2px;
+    transition: transform .12s var(--ease);
+  }
+  .btn-dark:active { transform: scale(.97); }
+  .login-demo {
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px dashed var(--line);
+    font-size: 11px; color: var(--ink-3);
+    display: flex; gap: 8px; align-items: center;
+  }
+  .login-demo .btn {
+    flex: 1; height: 34px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); font-size: 12px; color: var(--ink);
+  }
+  .login-demo .btn:hover { border-color: var(--primary); }
+
+  /* ---------- 应用框架 ---------- */
+  #appShell { display: none; height: 100vh; }
+  #appShell.show { display: flex; }
+  .sidebar {
+    width: 200px; flex-shrink: 0;
+    background: var(--card);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+  .side-logo {
+    padding: 18px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .side-logo .mark {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 800;
+  }
+  .side-logo .name { font-size: 13px; font-weight: 700; line-height: 1.3; }
+  .side-logo .name span { display: block; font-size: 10px; color: var(--ink-3); font-weight: 400; }
+  .nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+  .nav-group { font-size: 10px; color: var(--ink-3); padding: 12px 10px 6px; letter-spacing: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 13px; color: var(--ink-2);
+    cursor: pointer;
+    position: relative;
+    margin-bottom: 2px;
+    transition: background .15s, color .15s;
+  }
+  .nav-item:hover { background: var(--primary-weak); }
+  .nav-item.active { background: var(--primary); color: #fff; font-weight: 600; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-item .perm-tag { margin-left: auto; font-size: 10px; opacity: .55; }
+  .side-user {
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--primary-weak);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .side-user .info { flex: 1; min-width: 0; }
+  .side-user .uname { font-size: 13px; font-weight: 600; }
+  .side-user .urole { font-size: 11px; color: var(--ink-3); }
+  .icon-btn {
+    border: none; background: none;
+    color: var(--ink-3); font-size: 12px;
+    padding: 4px; cursor: pointer;
+  }
+  .icon-btn:hover { color: var(--ink); }
+
+  .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar {
+    height: 56px; flex-shrink: 0;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 16px;
+  }
+  .topbar .ptitle { font-size: 16px; font-weight: 700; }
+  .topbar .chips { margin-left: auto; display: flex; gap: 8px; }
+  .chip {
+    background: var(--primary-weak);
+    border-radius: 999px;
+    font-size: 12px;
+    padding: 6px 14px;
+    color: var(--ink-2);
+  }
+  .chip b { color: var(--ink); }
+  .pages { flex: 1; overflow: hidden; position: relative; }
+  .page {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px 24px 32px;
+    animation: pageIn .22s var(--ease);
+  }
+  .page.show { display: block; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- 通用组件 ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .card-title .sub { font-size: 11px; color: var(--ink-3); font-weight: 400; }
+  .btn {
+    height: 34px; padding: 0 16px;
+    border: 1px solid var(--line); border-radius: 9px;
+    background: var(--card); font-size: 13px; color: var(--ink);
+    transition: transform .1s var(--ease), border-color .15s;
+  }
+  .btn:hover { border-color: var(--primary); }
+  .btn:active { transform: scale(.95); }
+  .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn.danger { color: var(--price); border-color: #f3d2cb; }
+  .btn.danger:hover { border-color: var(--price); }
+  .btn.sm { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 7px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  .tag.ok { background: #e7f6ec; color: var(--ok); }
+  .tag.pending { background: var(--primary); color: #fff; }
+  .tag.hold { background: #fdf3e3; color: var(--warn); }
+  .tag.off { background: var(--primary-weak); color: var(--ink-3); }
+  .tag.cancel { background: #fceaea; color: var(--price); }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.tbl th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--ink-3); letter-spacing: 1px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.tbl td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.tbl tr:last-child td { border-bottom: none; }
+  table.tbl tr.rowlink { cursor: pointer; }
+  table.tbl tr.rowlink:hover { background: var(--primary-weak); }
+  .empty { text-align: center; padding: 44px 0; color: var(--ink-3); font-size: 13px; line-height: 1.8; }
+
+  /* 开关 */
+  .switch { position: relative; width: 40px; height: 22px; display: inline-block; vertical-align: middle; }
+  .switch input { display: none; }
+  .switch .track {
+    position: absolute; inset: 0;
+    background: #d5d8dd; border-radius: 999px;
+    transition: background .2s;
+    cursor: pointer;
+  }
+  .switch .track::after {
+    content: "";
+    position: absolute; top: 3px; left: 3px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff;
+    transition: transform .2s var(--ease);
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .switch input:checked + .track { background: var(--primary); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+
+  /* ---------- 收银台 ---------- */
+  .cashier-grid { display: flex; gap: 16px; align-items: flex-start; }
+  .cashier-left { flex: 1.4; min-width: 0; }
+  .cashier-right { flex: 1; min-width: 0; position: sticky; top: 0; }
+  .stat-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .stat-card { position: relative; overflow: hidden; transition: box-shadow .15s; }
+  .stat-card:hover { box-shadow: 0 3px 14px rgba(0,0,0,.06); }
+  .stat-card .v { font-size: 22px; font-weight: 700; }
+  .stat-card .k { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .stat-card .d { font-size: 11px; color: var(--ink-3); margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
+  .stat-card .d b { color: var(--ink-2); font-weight: 600; }
+  /* 分类行内操作 / 菜品缩略图 */
+  .cops { display: none; gap: 2px; margin-right: 4px; }
+  .cat-item:hover .cops { display: inline-flex; }
+  .cbtn {
+    width: 20px; height: 20px; border: 1px solid var(--line); border-radius: 6px;
+    background: #fff; font-size: 11px; color: var(--ink-2); line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .cbtn:hover { border-color: var(--ink-2); color: var(--ink); }
+  .cbtn:disabled { opacity: .3; cursor: default; }
+  .dthumb {
+    width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+    background: var(--primary-weak);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--ink-2);
+  }
+  /* 分段切换器 */
+  .seg { display: flex; background: var(--primary-weak); border-radius: 9px; padding: 3px; }
+  .seg button { border: none; background: none; padding: 4px 14px; font-size: 12px; border-radius: 7px; color: var(--ink-2); transition: all .15s; }
+  .seg button.active { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .delta-up { color: var(--ok); font-weight: 600; }
+  .delta-down { color: var(--price); font-weight: 600; }
+  .slow-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; border-bottom: 1px dashed var(--line); }
+  .slow-row:last-child { border-bottom: none; }
+  .slow-dot { width: 18px; height: 18px; border-radius: 6px; background: #fdf3e7; color: var(--warn); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  /* 表单增强 */
+  .req { color: var(--price); font-style: normal; }
+  .spec-group { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; margin-bottom: 10px; background: #fafafa; }
+  .sg-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .sg-head input { height: 34px; border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; font-size: 13px; flex: 1; min-width: 0; background: #fff; font-weight: 600; }
+  .sg-head input:focus { border-color: var(--ink-2); }
+  .sg-opt { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .sg-opt input { height: 32px; border: 1px solid var(--line); border-radius: 9px; padding: 0 10px; font-size: 13px; min-width: 0; background: #fff; }
+  .sg-opt input:focus { border-color: var(--ink-2); }
+  .sg-opt .n { flex: 1.4; } .sg-opt .p { flex: .6; }
+  .sg-price { font-size: 11px; color: var(--ink-3); min-width: 62px; text-align: right; flex-shrink: 0; }
+  .sg-price b { color: var(--ink); }
+  .tpl-vars { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tpl-var { font-size: 11px; padding: 3px 9px; border: 1px dashed var(--line); border-radius: 7px; color: var(--ink-2); cursor: pointer; font-family: ui-monospace, Consolas, monospace; transition: all .12s; }
+  .tpl-var:hover { border-color: var(--ink-2); color: var(--ink); background: var(--primary-weak); }
+  .mono { font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.6; }
+  .form-err { color: var(--price); font-size: 12px; margin-top: 8px; display: none; }
+  .form-hint { font-size: 11px; color: var(--ink-3); line-height: 1.6; margin-top: 4px; }
+  .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  /* ---------- 通用筛选栏 ---------- */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 12px 14px; background: var(--bg);
+    border-radius: 12px; margin-bottom: 14px;
+  }
+  .filter-bar input, .filter-bar select {
+    height: 36px; border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 12px; font-size: 13px; background: var(--card);
+    color: var(--ink); font-family: inherit; min-width: 0;
+  }
+  .filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: var(--ink-2); }
+  .filter-bar input::placeholder { color: var(--ink-3); }
+  .fb-kw { flex: 1.2; min-width: 150px; }
+  .fb-dt { flex: .9; min-width: 110px; }
+  .fb-date { flex: 1.05; min-width: 130px; }
+  .fb-dim { flex: .8; min-width: 100px; }
+  .fb-sep { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .fb-sep i { font-style: normal; font-size: 12px; color: var(--ink-3); }
+  .fb-act { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .fb-count { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+  .fb-count b { color: var(--ink); font-weight: 700; }
+  /* ---------- 通用分页 ---------- */
+  .pager { display: flex; align-items: center; justify-content: space-between; padding: 12px 2px 0; flex-wrap: wrap; gap: 8px; }
+  .pg-info { font-size: 12px; color: var(--ink-3); }
+  .pg-info b { color: var(--ink-2); font-weight: 600; }
+  .pg-btns { display: flex; gap: 6px; align-items: center; }
+  .pg-btn {
+    min-width: 28px; height: 28px; padding: 0 8px;
+    border: 1px solid var(--line); background: #fff;
+    border-radius: 8px; font-size: 12px; color: var(--ink-2);
+    cursor: pointer; transition: all .12s;
+    font-family: inherit;
+  }
+  .pg-btn:hover:not(:disabled):not(.active) { border-color: #b9bec5; color: var(--ink); }
+  .pg-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+  .pg-btn:disabled { opacity: .35; cursor: default; }
+  .pg-dots { font-size: 12px; color: var(--ink-3); padding: 0 2px; }
+  .search-row input {
+    flex: 1; height: 38px;
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 0 14px; font-size: 13px;
+    background: var(--card);
+  }
+  .search-result { margin-bottom: 14px; }
+  .tbl-legend { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .lg-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 5px 13px; border: 1px solid var(--line);
+    border-radius: 999px; background: #fff; cursor: pointer;
+    color: var(--ink-2); transition: all .15s;
+  }
+  .lg-chip i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .lg-chip b { font-weight: 700; }
+  .lg-chip:hover { border-color: #c9cdd3; }
+  .lg-chip.active { border-color: var(--primary); color: var(--ink); background: var(--primary-weak); font-weight: 600; }
+  .table-sec-t { font-size: 12px; color: var(--ink-3); font-weight: 600; margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .table-sec-t::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(126px, 1fr)); gap: 10px; }
+  .table-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 12px 10px 15px;
+    cursor: pointer;
+    transition: transform .1s var(--ease), border-color .15s, box-shadow .15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .table-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .table-card:hover { border-color: #b9bec5; box-shadow: 0 3px 12px rgba(0,0,0,.07); }
+  .table-card:active { transform: scale(.96); }
+  .table-card.sel { border-color: var(--primary) !important; box-shadow: 0 0 0 1px var(--primary); }
+  .table-card.idle { background: #fafbfc; }
+  .table-card.idle::before { background: #c8ccd2; }
+  .table-card.idle .tno { color: var(--ink-3); }
+  /* 状态整卡着色：待结算暖橙 / 挂单蓝灰 / 空闲浅灰 */
+  .table-card.busy { background: #fff8ee; border-color: #f0ddbe; }
+  .table-card.busy::before { background: var(--warn); }
+  .table-card.busy .tno { color: #9a6207; }
+  .table-card.hold { background: #f2f5f9; border-color: #d9e1ea; }
+  .table-card.hold::before { background: #7c8aa0; }
+  .table-card.hold .tno { color: #55647a; }
+  .table-card .tno { font-size: 17px; font-weight: 800; letter-spacing: 1px; }
+  .table-card .tst { font-size: 11px; margin-top: 8px; color: var(--ink-3); }
+  .table-card .amount { font-size: 15px; font-weight: 800; color: var(--price); margin-top: 6px; }
+  .table-card .tmeta { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+  .table-card.busy .tmeta, .table-card.busy .tst { color: #b3905c; }
+  .table-card.hold .tmeta, .table-card.hold .tst { color: #8291a6; }
+  .tbadge { position: absolute; top: 9px; right: 9px; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .table-card.busy .tbadge { background: #fdf3e7; color: var(--warn); }
+  .table-card.hold .tbadge { background: #eef1f5; color: #7c8aa0; }
+  .table-card.idle .tbadge { background: #eef1f5; color: var(--ink-3); }
+  .order-block { margin-bottom: 16px; }
+  .order-items { }
+  /* 数量步进器 */
+  .stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+  .stepper button { width: 30px; height: 30px; border: none; background: var(--primary-weak); font-size: 15px; color: var(--ink); transition: background .12s; }
+  .stepper button:hover { background: #e6e8eb; }
+  .stepper button:active { background: #dbdee2; }
+  .stepper .stv { min-width: 34px; text-align: center; font-size: 13px; font-weight: 600; }
+  .oi-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 13px;
+  }
+  .oi-row:last-child { border-bottom: none; }
+  .oi-row.returned { opacity: .45; }
+  .oi-row.returned .oi-name { text-decoration: line-through; }
+  .oi-name { flex: 1; min-width: 0; }
+  .oi-name .spec { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .oi-qty { color: var(--ink-2); font-size: 12px; }
+  .oi-price { font-weight: 700; min-width: 56px; text-align: right; }
+  .pay-methods { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pay-methods .pm {
+    flex: 1; min-width: 70px;
+    height: 40px;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--card);
+    font-size: 13px; color: var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .pay-methods .pm.active { border-color: var(--primary); background: var(--primary); color: #fff; font-weight: 600; }
+  .settle-line {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--ink-2);
+    padding: 5px 0;
+  }
+  .settle-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; margin-top: 6px; border-top: 1px solid var(--line); }
+  .settle-total .money { font-size: 26px; font-weight: 800; color: var(--price); }
+  .settle-total .money .yen { font-size: 13px; }
+  .roundoff-line { display: flex; justify-content: space-between; align-items: center; padding: 8px 0 2px; font-size: 13px; color: var(--ink-2); }
+  .action-row { display: flex; gap: 8px; margin-top: 14px; }
+  .action-row .btn { flex: 1; }
+
+  /* ---------- 菜品管理 ---------- */
+  .dish-layout { display: flex; gap: 16px; align-items: flex-start; }
+  .cat-panel { width: 240px; flex-shrink: 0; position: sticky; top: 16px; }
+  .cat-item {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--ink-2);
+    white-space: nowrap; overflow: hidden;
+    transition: background .12s, color .12s;
+  }
+  .cat-item:hover { background: var(--primary-weak); }
+  .cat-item.active { background: var(--primary); color: #fff; font-weight: 600; }
+  .cat-item .cnt {
+    font-size: 11px; opacity: 1;
+    background: var(--primary-weak); color: var(--ink-2);
+    border-radius: 999px; padding: 3px 10px;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .cat-item.active .cnt { background: rgba(255,255,255,.22); color: #fff; }
+  .cat-item:hover .cnt { display: none; }
+  .cat-item > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .cat-item .cops { flex-shrink: 0; }
+  .cbtn { width: 22px; height: 22px; font-size: 12px; }
+  .cat-item.active .cbtn { border-color: rgba(255,255,255,.4); background: transparent; color: #fff; }
+  .cat-foot {
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 11px; color: var(--ink-3); text-align: center;
+  }
+  .cat-foot b { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------- 桌台 ---------- */
+  .qr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .qr-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; text-align: center;
+  }
+  .qr-box { width: 84px; height: 84px; margin: 0 auto 8px; display: grid; grid-template-columns: repeat(8, 1fr); border: 3px solid var(--primary); border-radius: 4px; overflow: hidden; }
+  .qr-box i { background: var(--primary); }
+  .qr-box i.w { background: #fff; }
+  .qr-box.lg { width: 176px; height: 176px; border-width: 5px; margin: 0 auto 14px; }
+
+  /* ---------- 报表 ---------- */
+  .bar-row { display: flex; align-items: flex-end; gap: 14px; height: 140px; padding: 0 4px; }
+  .bar-row.compact { gap: 2px; }
+  .bar-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar-col .bar { width: 60%; background: var(--primary); border-radius: 6px 6px 3px 3px; min-height: 4px; transition: height .4s var(--ease); }
+  .bar-row.compact .bar { width: 100%; border-radius: 3px 3px 1px 1px; }
+  .bar-col .lbl { font-size: 11px; color: var(--ink-3); }
+  .bar-row.compact .lbl { font-size: 9px; white-space: nowrap; }
+  .bar-col .val { font-size: 11px; font-weight: 700; }
+  .bar-row.compact .val { font-size: 10px; white-space: nowrap; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-row .rk { width: 20px; height: 20px; border-radius: 6px; background: var(--primary-weak); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--ink-2); }
+  .rank-row.top .rk { background: var(--primary); color: #fff; }
+  .rank-row .nm { flex: 1; }
+  .rank-row .track { width: 130px; height: 6px; border-radius: 3px; background: var(--primary-weak); overflow: hidden; }
+  .rank-row .track i { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
+
+  /* ---------- 弹窗 ---------- */
+  .modal-mask {
+    position: fixed; inset: 0;
+    background: rgba(23,24,28,.45);
+    z-index: 90;
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    width: 460px; max-width: 92vw;
+    max-height: 84vh;
+    background: var(--card);
+    border-radius: 14px;
+    display: flex; flex-direction: column;
+    animation: fadeUp .25s var(--ease);
+    overflow: hidden;
+  }
+  .modal-head {
+    padding: 18px 20px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-head .t { font-size: 16px; font-weight: 700; }
+  .modal-body { padding: 6px 20px 16px; overflow-y: auto; }
+  .modal-foot {
+    padding: 12px 20px calc(16px + env(safe-area-inset-bottom,0px));
+    border-top: 1px solid var(--line);
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .modal-foot .btn { min-width: 90px; }
+  .opt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt-chips .opt {
+    font-size: 12px; padding: 7px 14px;
+    border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink-2); cursor: pointer;
+    background: var(--card);
+  }
+  .opt-chips .opt.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+
+  /* 小票预览 */
+  .receipt {
+    background: #fff;
+    border: 1px dashed #c9cdd3;
+    border-radius: 8px;
+    padding: 16px 14px;
+    font-family: "SFMono-Regular", Consolas, "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #17181c;
+    white-space: pre-wrap;
+  }
+  .receipt .c { text-align: center; }
+  .receipt .hr { border-top: 1px dashed #999; margin: 8px 0; }
+
+  /* toast */
+  .toast {
+    position: fixed; left: 50%; top: 40px;
+    transform: translate(-50%,-8px);
+    background: rgba(23,24,28,.92);
+    color: #fff; font-size: 13px;
+    padding: 10px 20px; border-radius: 10px;
+    z-index: 120; pointer-events: none;
+    opacity: 0; transition: opacity .2s, transform .2s var(--ease);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%,0); }
+</style>
+</head>
+<body>
+
+<!-- ====== 登录页 ====== -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="mark">
+        <svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 6h24v36l-6-4-6 4-6-4-6 4z"/><path d="M18 17h12M18 24h12"/>
+        </svg>
+      </div>
+      <h1 id="brandShopName">灶火人家·家常菜</h1>
+      <div class="b-sub">扫码点餐 · 商家管理端</div>
+      <div class="feat"><i></i>顾客扫码点餐 · 桌号自动带入</div>
+      <div class="feat"><i></i>收银结算 · 改单 / 退菜 / 抹零</div>
+      <div class="feat"><i></i>局域网小票打印 · ESC/POS</div>
+      <div class="feat"><i></i>营业流水 · 报表与对账导出</div>
+      <div class="b-foot">局域网版 · 数据存储于本地门店主机</div>
+    </div>
+    <div class="login-form">
+      <div class="login-title">登录管理端</div>
+      <div class="login-sub" id="loginShopName">灶火人家·家常菜</div>
+      <div class="field">
+        <label>账号</label>
+        <input id="loginUser" placeholder="请输入账号" value="admin">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="loginPass" type="password" placeholder="请输入密码" value="123456" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-dark" onclick="doLogin()">登 录</button>
+      <div class="login-demo">
+        <span>原型演示</span>
+        <button class="btn" onclick="demoLogin('admin')">以管理员进入</button>
+        <button class="btn" onclick="demoLogin('cashier')">以收银员进入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 应用框架 ====== -->
+<div id="appShell">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="side-logo">
+      <div class="mark">灶</div>
+      <div class="name">灶火人家<span>扫码点餐 · 局域网版</span></div>
+    </div>
+    <nav class="nav" id="navBox"></nav>
+    <div class="side-user">
+      <div class="avatar" id="userAvatar">A</div>
+      <div class="info">
+        <div class="uname" id="userName">—</div>
+        <div class="urole" id="userRole">—</div>
+      </div>
+      <button class="icon-btn" onclick="openModal('pwdModal')" title="修改密码">改密</button>
+      <button class="icon-btn" onclick="logout()" title="退出登录">退出</button>
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <div class="content">
+    <div class="topbar">
+      <div class="ptitle" id="pageTitle">收银台</div>
+      <div class="chips">
+        <div class="chip">今日订单 <b class="num" id="todayOrders">0</b></div>
+        <div class="chip">今日营收 <b class="num">¥<span id="todayRevenue">0</span></b></div>
+        <div class="chip">打印机 <b>在线 2/2</b></div>
+      </div>
+    </div>
+
+    <div class="pages">
+
+      <!-- ===== 收银台 ===== -->
+      <div class="page show" id="page-cashier">
+        <div class="stat-row">
+          <div class="stat-card"><div class="v num" id="stOrders">0</div><div class="k">今日订单总数</div><div class="d" id="stOrdersDelta">待结算 <b>0</b> · 挂单 <b>0</b></div></div>
+          <div class="stat-card"><div class="v num">¥<span id="stRevenue">0</span></div><div class="k">今日营收汇总（已结清）</div><div class="d" id="stRevenueDelta">—</div></div>
+          <div class="stat-card"><div class="v num" id="stTables">0/0</div><div class="k">待结算 / 总桌台</div><div class="d" id="stTablesDelta">—</div></div>
+          <div class="stat-card"><div class="v num">¥<span id="stAvg">0</span></div><div class="k">客单价（已结清均摊）</div><div class="d">线下收款 · 系统不校验支付结果</div></div>
+        </div>
+
+        <div class="cashier-grid">
+          <div class="cashier-left">
+            <div class="search-row">
+              <input id="orderSearch" placeholder="按桌号 / 订单号检索订单，回车确认" onkeydown="if(event.key==='Enter')doSearch()">
+              <button class="btn primary" onclick="doSearch()">检索</button>
+            </div>
+            <div id="searchResult"></div>
+            <div class="card">
+              <div class="card-title">桌台概览 <span class="sub">点击桌台查看 / 结算订单</span></div>
+              <div class="tbl-legend" id="tblLegend"></div>
+              <div id="tableGrid"></div>
+            </div>
+          </div>
+
+          <div class="cashier-right">
+            <div class="card" id="orderPanel">
+              <div class="empty" id="orderEmpty">左侧选择桌台查看未结订单<br>或通过上方检索定位订单</div>
+              <div id="orderDetail" style="display:none">
+                <div class="card-title">
+                  <span id="opTitle">订单</span>
+                  <span id="opStatus"></span>
+                </div>
+                <div style="font-size:12px;color:var(--ink-3)" class="num" id="opMeta"></div>
+                <div class="order-block order-items" id="opItems"></div>
+                <div style="font-size:12px;color:var(--ink-2)" id="opNote"></div>
+                <div class="action-row" id="opEditActions">
+                  <button class="btn sm" onclick="openModify()">改单</button>
+                  <button class="btn sm" onclick="openReturn()">单品退菜</button>
+                  <button class="btn sm" onclick="holdOrder()">挂单</button>
+                  <button class="btn sm" id="resumeBtn" style="display:none" onclick="resumeOrder()">恢复待结算</button>
+                  <button class="btn sm danger" onclick="cancelOrder()">整单取消</button>
+                </div>
+                <div style="height:1px;background:var(--line);margin:14px 0"></div>
+                <!-- 结算区 -->
+                <div id="settleBox">
+                  <div class="settle-line"><span>菜品合计</span><span class="num">¥<span id="sumGoods">0</span></span></div>
+                  <div class="settle-line"><span>退菜金额</span><span class="num" style="color:var(--price)">-¥<span id="sumReturn">0</span></span></div>
+                  <div class="roundoff-line">
+                    <span>抹零（取整到元）<span style="font-size:11px;color:var(--ink-3)">后台开关控制</span></span>
+                    <label class="switch"><input type="checkbox" id="roundOffChk" onchange="renderSettle()"><span class="track"></span></label>
+                  </div>
+                  <div class="settle-line"><span>优惠抹零</span><span class="num" id="roundOffVal">¥0.00</span></div>
+                  <div class="settle-total">
+                    <span style="font-size:13px;color:var(--ink-2)">应收金额</span>
+                    <div class="money num"><span class="yen">¥</span><span id="payable">0</span></div>
+                  </div>
+                  <div style="font-size:11px;color:var(--ink-3);margin:4px 0 2px">结算方式（线下收款确认后点击结算）</div>
+                  <div class="pay-methods" id="payMethods"></div>
+                  <button class="btn-dark" style="letter-spacing:2px" onclick="confirmSettleModal()">确认结算</button>
+                  <div style="font-size:11px;color:var(--ink-3);text-align:center;margin-top:8px">结算后自动打印顾客结账单（局域网 9100）</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 菜品管理 ===== -->
+      <div class="page" id="page-dishes">
+        <div class="dish-layout">
+          <div class="cat-panel">
+            <div class="card">
+              <div class="card-title">菜品分类 <span class="sub">悬停可编辑/排序</span><button class="btn sm" onclick="addCategory()">＋</button></div>
+              <div id="catList"></div>
+              <div class="cat-foot num" id="catFoot"></div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="card">
+              <div class="card-title">
+                <span id="dishListTitle">全部菜品</span>
+                <span style="display:flex;gap:8px;align-items:center">
+                  <input id="dishSearch" placeholder="搜索菜品名称 / 分类" style="width:170px;height:32px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font-size:13px" oninput="renderDishRows()">
+                  <button class="btn sm" onclick="openAddonModal()">加料管理 <b class="num" id="addonCount"></b></button>
+                  <button class="btn primary sm" onclick="openDishEdit()">＋ 新增菜品</button>
+                </span>
+              </div>
+              <table class="tbl">
+                <thead><tr><th>菜品</th><th>分类</th><th>售价</th><th>规格/加料</th><th>排序</th><th>状态</th><th style="width:200px">操作</th></tr></thead>
+                <tbody id="dishRows"></tbody>
+              </table>
+              <div id="dishPager"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 桌台管理 ===== -->
+      <div class="page" id="page-tables">
+        <div class="dish-layout">
+          <div class="cat-panel">
+            <div class="card">
+              <div class="card-title">桌台区域 <span class="sub">悬停可编辑/排序</span><button class="btn sm" onclick="addArea()">＋</button></div>
+              <div id="areaList"></div>
+              <div class="cat-foot num" id="areaFoot"></div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="card">
+              <div class="card-title">
+                <span id="tableListTitle">全部桌台</span>
+                <span style="display:flex;gap:8px">
+                  <button class="btn sm" onclick="openModal('qrModal')">批量生成二维码</button>
+                  <button class="btn primary sm" onclick="addTable()">＋ 新增桌台</button>
+                </span>
+              </div>
+              <table class="tbl">
+                <thead><tr><th>桌号</th><th>所属区域</th><th>状态</th><th>未结订单</th><th>未结金额</th><th>二维码</th><th style="width:180px">操作</th></tr></thead>
+                <tbody id="tableRows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 打印配置 ===== -->
+      <div class="page" id="page-printer">
+        <div class="seg" id="printTabs" style="margin-bottom:16px">
+          <button class="active" onclick="showPrintTab('printers')">打印机（<span id="printerCnt">0</span>）</button>
+          <button onclick="showPrintTab('templates')">小票模板</button>
+          <button onclick="showPrintTab('logs')">打印日志</button>
+        </div>
+
+        <div id="prTab-printers">
+          <div class="card">
+            <div class="card-title">打印机列表 <span class="sub">局域网 RAW TCP 9100 · ESC/POS</span>
+              <button class="btn primary sm" onclick="addPrinter()">＋ 添加打印机</button>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>打印机名称</th><th>内网 IP</th><th>端口</th><th>用途</th><th>状态</th><th style="width:170px">操作</th></tr></thead>
+              <tbody id="printerRows"></tbody>
+            </table>
+            <div class="form-hint">提示：新添加的打印机默认离线，请与门店主机接入同一网段并绑定静态 IP 后，点击【测试】验证连通性。</div>
+          </div>
+        </div>
+
+        <div id="prTab-templates" style="display:none">
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">后厨小票模板（ESC/POS）
+              <span><button class="btn sm" onclick="resetTemplate('kitchen')">恢复默认</button><button class="btn sm primary" onclick="saveTemplate('kitchen')">保存</button></span>
+            </div>
+            <div class="tpl-vars" id="varsKitchen"></div>
+            <div class="field"><textarea id="tplKitchen" rows="10" class="mono"></textarea></div>
+            <div class="form-hint">点击变量插入到光标处；保存后下次打印按新模板渲染。后厨小票建议保留 {table} 与 {note}，便于出品核对。</div>
+          </div>
+          <div class="card">
+            <div class="card-title">结账单模板（ESC/POS）
+              <span><button class="btn sm" onclick="resetTemplate('bill')">恢复默认</button><button class="btn sm primary" onclick="saveTemplate('bill')">保存</button></span>
+            </div>
+            <div class="tpl-vars" id="varsBill"></div>
+            <div class="field"><textarea id="tplBill" rows="10" class="mono"></textarea></div>
+            <div class="form-hint">结账单建议保留 {total} / {off} / {payable}，确保金额口径与收银结算一致。</div>
+          </div>
+        </div>
+
+        <div id="prTab-logs" style="display:none">
+          <div class="card">
+            <div class="card-title">打印日志</div>
+            <div class="filter-bar">
+              <input id="logKw" class="fb-kw" placeholder="搜索订单号" oninput="renderPrintLog()" onkeydown="if(event.key==='Enter')renderPrintLog()">
+              <select id="logType" class="fb-dim" onchange="renderPrintLog()">
+                <option value="">全部单据</option><option>后厨小票</option><option>顾客结账单</option><option>测试页</option>
+              </select>
+              <select id="logPrinter" class="fb-dim" onchange="renderPrintLog()"></select>
+              <select id="logStatus" class="fb-dim" onchange="renderPrintLog()">
+                <option value="">全部状态</option><option value="成功">成功</option><option value="失败">失败</option>
+              </select>
+              <div class="fb-act">
+                <span class="fb-count" id="logSummary">—</span>
+                <button class="btn sm" onclick="resetLogFilters()">重置</button>
+              </div>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>时间</th><th>订单号</th><th>打印机</th><th>单据类型</th><th>状态</th><th>失败原因</th><th style="width:160px">操作</th></tr></thead>
+              <tbody id="logRows"></tbody>
+            </table>
+            <div id="logPager"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 订单流水 ===== -->
+      <div class="page" id="page-orders">
+        <div class="card">
+          <div class="card-title">历史订单</div>
+          <div class="filter-bar">
+            <input id="fOrderNo" class="fb-kw" placeholder="搜索订单号" oninput="renderOrderFlow()" onkeydown="if(event.key==='Enter')renderOrderFlow()">
+            <select id="fDate" class="fb-dt" onchange="toggleCustomDate()">
+              <option value="all">全部时间</option><option value="today">今日</option><option value="7d">近 7 日</option><option value="custom">自定义区间</option>
+            </select>
+            <span id="customDateBox" style="display:none;flex:2;gap:6px;align-items:center;min-width:0">
+              <input type="date" id="fDateFrom" value="2026-11-21" max="2026-11-27" onchange="renderOrderFlow()" class="fb-date">
+              <i style="font-style:normal;font-size:12px;color:var(--ink-3);flex-shrink:0">至</i>
+              <input type="date" id="fDateTo" value="2026-11-27" max="2026-11-27" onchange="renderOrderFlow()" class="fb-date">
+            </span>
+            <select id="fTable" class="fb-dim" onchange="renderOrderFlow()"></select>
+            <select id="fStatus" class="fb-dim" onchange="renderOrderFlow()">
+              <option value="">全部状态</option><option value="pending">待结算</option><option value="hold">挂单</option><option value="paid">已结清</option><option value="cancel">已取消</option>
+            </select>
+            <div class="fb-act">
+              <span class="fb-count" id="flowSummary">—</span>
+              <button class="btn sm" onclick="resetFlowFilters()">重置</button>
+              <button class="btn sm" onclick="exportOrders()">导出 Excel</button>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>订单号</th><th>桌号</th><th>下单时间</th><th>菜品数</th><th>合计</th><th>结算状态</th><th style="width:80px">操作</th></tr></thead>
+                <tbody id="flowRows"></tbody>
+              </table>
+              <div id="flowPager"></div>
+        </div>
+      </div>
+
+      <!-- ===== 操作日志 ===== -->
+      <div class="page" id="page-audit">
+        <div class="card">
+          <div class="card-title">操作日志 <span class="sub">登录、订单操作、打印、配置变更全量留痕，仅管理员可查</span></div>
+          <div class="filter-bar">
+            <input id="opKw" class="fb-kw" placeholder="搜索单号 / 对象 / 详情" oninput="renderAudit()" onkeydown="if(event.key==='Enter')renderAudit()">
+            <select id="opDate" class="fb-dt" onchange="toggleCustomOpDate()">
+              <option value="all">全部时间</option><option value="today">今日</option><option value="7d">近 7 日</option><option value="custom">自定义区间</option>
+            </select>
+            <span id="opCustomDateBox" style="display:none;flex:2;gap:6px;align-items:center;min-width:0">
+              <input type="date" id="opDateFrom" value="2026-11-21" max="2026-11-27" onchange="renderAudit()" class="fb-date">
+              <i style="font-style:normal;font-size:12px;color:var(--ink-3);flex-shrink:0">至</i>
+              <input type="date" id="opDateTo" value="2026-11-27" max="2026-11-27" onchange="renderAudit()" class="fb-date">
+            </span>
+            <select id="opAction" class="fb-dim" onchange="renderAudit()"></select>
+            <select id="opUser" class="fb-dim" onchange="renderAudit()"></select>
+            <div class="fb-act">
+              <span class="fb-count" id="opSummary">—</span>
+              <button class="btn sm" onclick="resetAuditFilters()">重置</button>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>时间</th><th>操作人</th><th>操作类型</th><th>操作对象</th><th>详情</th><th>IP</th><th style="width:110px">操作</th></tr></thead>
+            <tbody id="opRows"></tbody>
+          </table>
+          <div id="opPager"></div>
+        </div>
+      </div>
+
+      <!-- ===== 报表 ===== -->
+      <div class="page" id="page-reports">
+        <!-- 页面级口径条 -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:17px;font-weight:800">经营报表</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px">营收均按已结清实收计算 · 切换口径后除「营收趋势」外各卡联动</div>
+          </div>
+          <div class="seg" id="repRange">
+            <button class="active" onclick="setReportRange('today')">今日</button>
+            <button onclick="setReportRange('7d')">近 7 日</button>
+          </div>
+        </div>
+
+        <!-- 经营总览 -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">经营总览 <span class="sub" id="ovSub"></span></div>
+          <div class="stat-row" style="margin-top:14px">
+            <div class="stat-card"><div class="v num">¥<span id="rpRev">0</span></div><div class="k">营收（已结清实收）</div><div class="d" id="rpRevDelta">—</div></div>
+            <div class="stat-card"><div class="v num"><span id="rpOrders">0</span> 笔</div><div class="k">订单数</div><div class="d" id="rpOrdersDelta">—</div></div>
+            <div class="stat-card"><div class="v num">¥<span id="rpAvg">0</span></div><div class="k">客单价</div><div class="d" id="rpAvgDelta">—</div></div>
+            <div class="stat-card"><div class="v num" id="rpRetRate">—</div><div class="k">退菜率（退菜金额 ÷ 营收）</div><div class="d" id="rpRetDelta">—</div></div>
+            <div class="stat-card"><div class="v num" id="rpPeak">—</div><div class="k">高峰时段（今日）</div><div class="d" id="rpPeakDelta">—</div></div>
+          </div>
+        </div>
+
+        <!-- 时段分布 + 营收趋势 -->
+        <div style="display:flex;gap:16px;align-items:stretch">
+          <div class="card" style="flex:1.35;min-width:0">
+            <div class="card-title">时段营收分布 <span class="sub" id="hourSub"></span></div>
+            <div class="bar-row" id="hourBars"></div>
+          </div>
+          <div class="card" style="flex:1;min-width:0">
+            <div class="card-title" style="flex-wrap:wrap;gap:8px">
+              <span>营收趋势</span>
+              <div class="seg" id="trendRange">
+                <button class="active" onclick="setTrendRange('7d')">近 7 日</button>
+                <button onclick="setTrendRange('30d')">近 30 日</button>
+              </div>
+              <span class="sub" id="trendSub" style="margin-left:auto"></span>
+            </div>
+            <div class="bar-row" id="revBars"></div>
+          </div>
+        </div>
+
+        <!-- 畅销/滞销 + 结算对账 -->
+        <div style="display:flex;gap:16px;align-items:stretch;margin-top:16px">
+          <div class="card" style="flex:1.25;min-width:0">
+            <div class="card-title" id="rankTitle">菜品销量排行</div>
+            <div id="rankList"></div>
+            <div style="height:1px;background:var(--line);margin:12px 0"></div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px">滞销提醒 <span style="font-weight:400;color:var(--ink-3);font-size:11px">固定近 7 日口径 · 销量垫底可考虑促销或下架</span></div>
+            <div id="slowList"></div>
+          </div>
+          <div class="card" style="flex:1;min-width:0">
+            <div class="card-title">结算方式对账 <span class="sub" id="paySub"></span></div>
+            <table class="tbl">
+              <thead><tr><th>结算方式</th><th>笔数</th><th>金额</th><th>占比</th></tr></thead>
+              <tbody id="payRows"></tbody>
+            </table>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:8px;line-height:1.6">线下收款金额以实际到账为准，本表用于与营收勾稽核对差异。</div>
+          </div>
+        </div>
+
+        <!-- 退菜统计 -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">退菜记录统计 <span class="sub" id="retSub"></span></div>
+          <table class="tbl">
+            <thead><tr><th>菜品</th><th>退菜次数</th><th>退菜金额</th><th>主要原因</th></tr></thead>
+            <tbody id="returnRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== 系统设置 ===== -->
+      <div class="page" id="page-settings">
+        <div style="display:flex;gap:16px;align-items:flex-start">
+          <div style="flex:1;min-width:0">
+            <div class="card" style="margin-bottom:16px">
+              <div class="card-title">门店信息</div>
+              <div class="field"><label>门店名称 <i class="req">*</i></label><input id="setShopName"></div>
+              <div class="field"><label>小票抬头</label><input id="setReceiptTitle" placeholder="留空时使用门店名称"></div>
+              <div style="display:flex;gap:10px">
+                <div class="field" style="flex:1"><label>营业开始</label><input id="setOpenTime" placeholder="10:30"></div>
+                <div class="field" style="flex:1"><label>营业结束</label><input id="setCloseTime" placeholder="21:30"></div>
+                <div class="field" style="flex:1.4"><label>联系电话</label><input id="setPhone" placeholder="0731-8888 8888"></div>
+              </div>
+              <div class="form-hint">营业时间展示在顾客点餐页顶部；联系电话打印在结账单底部。</div>
+              <button class="btn primary" onclick="saveSettings()" style="margin-top:8px">保存设置</button>
+            </div>
+            <div class="card">
+              <div class="card-title">功能开关</div>
+              <div class="settle-line" style="padding:4px 0">
+                <span>抹零功能（收银台显示抹零选项）</span>
+                <label class="switch"><input type="checkbox" id="setRoundOff" onchange="SETTINGS.roundOff=this.checked;toast('已保存')"><span class="track"></span></label>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="flex:1.2;min-width:0">
+            <div class="card-title">用户账号管理 <span class="sub">角色：管理员 / 收银员</span></div>
+            <table class="tbl">
+              <thead><tr><th>账号</th><th>角色</th><th>状态</th><th style="width:110px">操作</th></tr></thead>
+              <tbody id="userRows"></tbody>
+            </table>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <input id="newUserName" placeholder="账号名（如 cashier03）" style="flex:1.2;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:13px">
+              <select id="newUserRole" style="height:36px;border:1px solid var(--line);border-radius:9px;padding:0 10px;font-size:13px;background:#fff">
+                <option>收银员</option><option>管理员</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <input id="newUserPass" placeholder="初始密码（留空默认 123456）" style="flex:1;height:36px;border:1px solid var(--line);border-radius:9px;padding:0 12px;font-size:13px">
+              <button class="btn primary" onclick="addUser()">新增账号</button>
+            </div>
+            <div class="form-hint">新账号默认为启用状态，收银员的可见菜单由下方「角色菜单权限」控制。</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">角色菜单权限 <span class="sub">配置各角色侧边栏可见菜单 · 管理员固定拥有全部权限</span>
+            <button class="btn sm" onclick="resetRoleMenus()">恢复默认</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>菜单</th><th style="width:120px">管理员</th><th style="width:120px">收银员</th><th>说明</th></tr></thead>
+            <tbody id="permRows"></tbody>
+          </table>
+          <div class="form-hint">开关即时生效：已登录的收银员侧边栏立即刷新；被隐藏的页面即使直接输入地址访问也会被拦截。建议至少保留「收银台」，避免角色无可用页面。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ====== 弹窗们 ====== -->
+<div class="modal-mask" id="mask" onclick="if(event.target===this)closeModal()">
+  <!-- 修改密码 -->
+  <div class="modal" id="pwdModal" style="width:380px">
+    <div class="modal-head"><div class="t">修改密码</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>原密码 <i class="req">*</i></label><input type="password" id="pwdOld" placeholder="请输入原密码"></div>
+      <div class="field"><label>新密码 <i class="req">*</i></label><input type="password" id="pwdNew" placeholder="8-20 位，需包含字母和数字" oninput="pwdStrength()" onkeydown="if(event.key==='Enter')doChangePwd()">
+        <div class="form-hint" id="pwdStrength"></div>
+      </div>
+      <div class="field"><label>确认新密码 <i class="req">*</i></label><input type="password" id="pwdNew2" placeholder="再次输入新密码" onkeydown="if(event.key==='Enter')doChangePwd()"></div>
+      <div class="form-err" id="pwdErr"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="doChangePwd()">确认修改</button></div>
+  </div>
+
+  <!-- 单品退菜 -->
+  <div class="modal" id="returnModal" style="width:420px">
+    <div class="modal-head"><div class="t">单品退菜</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:10px">选择要退的菜品（可多选）</div>
+      <div class="opt-chips" id="returnItems"></div>
+      <div class="settle-line" style="padding:6px 0;margin-top:8px">
+        <span style="font-size:12px;color:var(--ink-2)">退菜金额合计</span>
+        <span class="num" style="font-weight:700;color:var(--price)" id="returnAmt">¥0.00</span>
+      </div>
+      <div class="field" style="margin-top:6px"><label>退菜原因（选填）</label>
+        <div class="opt-chips" id="reasonTags" style="margin-bottom:8px"></div>
+        <textarea id="returnReason" rows="2" placeholder="如：顾客不吃辣 / 上错菜 / 口感问题"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn danger" onclick="doReturn()">确认退菜</button></div>
+  </div>
+
+  <!-- 改单 -->
+  <div class="modal" id="modifyModal" style="width:480px">
+    <div class="modal-head"><div class="t">订单改单</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:10px">调整数量（退菜请用"单品退菜"）</div>
+      <div id="modifyItems"></div>
+      <div style="height:1px;background:var(--line);margin:12px 0"></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:8px">新增菜品</div>
+      <div style="display:flex;gap:8px">
+        <select id="addDishSel" style="flex:1;height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:13px;background:#fff"></select>
+        <button class="btn" onclick="addDishToOrder()">加入</button>
+      </div>
+      <div id="newDishList" style="margin-top:10px"></div>
+      <div class="field" style="margin-top:12px"><label>整单备注</label><textarea id="modifyNote" rows="2"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveModify()">保存改单</button></div>
+  </div>
+
+  <!-- 规格选择（改单加菜 / 改规格，单价随差价联动） -->
+  <div class="modal" id="specPickModal" style="width:400px">
+    <div class="modal-head"><div class="t" id="specPickTitle">选择规格</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div id="specPickGroups"></div>
+    </div>
+    <div class="modal-foot">
+      <span style="flex:1;font-size:12px;color:var(--ink-2)">单价 <b class="num" style="color:var(--price);font-size:16px" id="specPickPrice">¥0</b></span>
+      <button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="confirmSpecPick()">确定</button>
+    </div>
+  </div>
+
+  <!-- 整单取消 -->
+  <div class="modal" id="cancelModal" style="width:380px">
+    <div class="modal-head"><div class="t">整单取消</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;line-height:1.8" id="cancelText"></div>
+      <div style="background:#fceaea;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--price);margin-top:12px">
+        取消后订单标记【已取消】，桌台回到空闲状态；后厨如已收到小票请口头叫停。
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">再想想</button><button class="btn danger" onclick="doCancel()">确认取消整单</button></div>
+  </div>
+
+  <!-- 结算确认 -->
+  <div class="modal" id="settleModal" style="width:400px">
+    <div class="modal-head"><div class="t">确认结算</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="settle-line"><span>订单号</span><span class="num" id="cfNo"></span></div>
+      <div class="settle-line"><span>桌号</span><span id="cfTable"></span></div>
+      <div class="settle-line"><span>结算方式</span><span id="cfMethod"></span></div>
+      <div class="settle-line"><span>应收金额</span><span class="num" style="font-size:20px;font-weight:800;color:var(--price)" id="cfAmount"></span></div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink-2);margin-top:10px">
+        请先<b style="color:var(--ink)">线下确认已收款</b>（现金当面清点 / 扫静态码到账），系统不校验支付结果。确认后订单标记【已结清】并打印结账单。
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="doSettle()">已收款，确认结算</button></div>
+  </div>
+
+  <!-- 打印预览 -->
+  <div class="modal" id="printModal" style="width:420px">
+    <div class="modal-head"><div class="t" id="printTitle">打印预览 · 顾客结账单</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="receipt" id="receiptBox"></div></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn" onclick="toast('已向 后厨打印机(192.168.1.52:9100) 重发指令')">重新打印</button>
+      <button class="btn primary" onclick="closeModal();toast('打印完成')">打印完成</button>
+    </div>
+  </div>
+
+  <!-- 二维码批量生成 -->
+  <div class="modal" id="qrModal" style="width:560px">
+    <div class="modal-head"><div class="t">桌台二维码批量生成</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:12px">二维码内容：http://192.168.1.10:8080/m?table={tableId}，打印桌贴后供顾客扫码进入对应桌台的点餐页。</div>
+      <div class="qr-grid" id="qrGrid"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn primary" onclick="toast('已打包下载全部二维码图片（zip）')">下载全部图片</button>
+    </div>
+  </div>
+
+  <!-- 菜品编辑 -->
+  <div class="modal" id="dishModal" style="width:480px">
+    <div class="modal-head"><div class="t" id="dishModalTitle">新增菜品</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>菜品名称</label><input id="dishName" placeholder="如：酸汤肥牛"></div>
+      <div class="field"><label>菜品图片</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="dishImgPrev" style="width:44px;height:44px;border-radius:10px;background:var(--primary-weak);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ink-3);flex-shrink:0">图</div>
+          <input type="file" id="dishImgFile" accept="image/*" style="display:none" onchange="pickDishImg(this)">
+          <button class="btn sm" onclick="document.getElementById('dishImgFile').click()">上传图片</button>
+          <span style="font-size:11px;color:var(--ink-3)" id="dishImgName">未上传（内网本地存储）</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>所属分类</label><select id="dishCat" style="width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:14px;background:#fff"></select></div>
+        <div class="field" style="flex:1"><label>售价（元）</label><input id="dishPrice" type="number" placeholder="0" oninput="updateSpecPrices()"></div>
+        <div class="field" style="flex:1"><label>排序</label><input id="dishSort" type="number" value="0"></div>
+      </div>
+      <div class="field"><label>规格组（选填）<span style="font-weight:400;color:var(--ink-3);font-size:11px">如份量、辣度；每个选项可设差价（如大份 +3 元），顾客下单时按所选规格计价</span></label>
+        <div id="specGroups"></div>
+        <button class="btn sm" style="margin-top:6px" onclick="addSpecGroup()">＋ 添加规格组</button>
+      </div>
+      <div class="field"><label>绑定加料（选填）</label>
+        <div class="opt-chips" id="dishAddonChips"></div>
+      </div>
+      <div class="settle-line" style="padding:4px 0">
+        <span style="font-size:13px;color:var(--ink-2)">上架（下架后顾客端不可见）</span>
+        <label class="switch"><input type="checkbox" id="dishOn" checked><span class="track"></span></label>
+      </div>
+      <div class="settle-line" style="padding:4px 0">
+        <span style="font-size:13px;color:var(--ink-2)">置为售罄（顾客端置灰不可选）</span>
+        <label class="switch"><input type="checkbox" id="dishSoldOut"><span class="track"></span></label>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveDish()">保存</button></div>
+  </div>
+
+  <!-- 通用输入弹窗 -->
+  <div class="modal" id="promptModal" style="width:380px">
+    <div class="modal-head"><div class="t" id="promptTitle">输入</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:0"><label id="promptLabel">请输入</label><input id="promptInput" onkeydown="if(event.key==='Enter')promptOk()"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" id="promptOkBtn" onclick="promptOk()">确定</button></div>
+  </div>
+
+  <!-- 通用确认弹窗 -->
+  <div class="modal" id="confirmModal" style="width:380px">
+    <div class="modal-head"><div class="t" id="confirmTitle">确认操作</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;line-height:1.8" id="confirmText"></div>
+      <div style="background:#fceaea;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--price);margin-top:12px" id="confirmWarn">此操作不可撤销，请确认后再执行。</div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn danger" id="confirmOkBtn" onclick="confirmOk()">确认</button></div>
+  </div>
+
+  <!-- 打印机表单 -->
+  <div class="modal" id="printerModal" style="width:420px">
+    <div class="modal-head"><div class="t" id="printerFormTitle">添加打印机</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>打印机名称 <i class="req">*</i></label><input id="prName" placeholder="如：后厨打印机"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1.5"><label>内网 IP <i class="req">*</i></label><input id="prIp" placeholder="192.168.1.54"></div>
+        <div class="field" style="flex:1"><label>端口</label><input id="prPort" type="number" value="9100"></div>
+      </div>
+      <div class="field"><label>用途 <i class="req">*</i></label>
+        <select id="prUse" style="width:100%;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:14px;background:#fff">
+          <option>后厨小票</option><option>顾客结账单</option><option>后厨小票 + 结账单</option>
+        </select>
+      </div>
+      <div class="field"><label>备注（选填）</label><input id="prNote" placeholder="型号、摆放位置等"></div>
+      <div class="form-hint">要求：打印机支持 RAW TCP 9100 / ESC-POS，与门店主机同网段；路由器需绑定静态 IP，防止 IP 变动导致打印失效。</div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="savePrinterForm()">保存打印机</button></div>
+  </div>
+
+  <!-- 加料管理 -->
+  <div class="modal" id="addonModal" style="width:520px">
+    <div class="modal-head">
+      <div class="t">加料管理 <span class="sub" style="margin-left:6px">供菜品绑定，顾客点单时可加购</span></div>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <table class="tbl">
+        <thead><tr><th>加料项</th><th>加价</th><th>绑定菜品数</th><th style="width:130px">操作</th></tr></thead>
+        <tbody id="addonRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11px;color:var(--ink-3)">删除加料项会自动解除与菜品的绑定</span>
+      <span style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal()">关闭</button>
+        <button class="btn primary" onclick="addAddon()">＋ 新增加料</button>
+      </span>
+    </div>
+  </div>
+
+  <!-- 加料表单（新增/编辑） -->
+  <div class="modal" id="addonFormModal" style="width:400px">
+    <div class="modal-head"><div class="t" id="addonFormTitle">新增加料</div><button class="icon-btn" onclick="cancelAddonForm()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>加料名称 <i class="req">*</i></label><input id="adName" placeholder="如：煎蛋 / 芝士 / 宽粉" onkeydown="if(event.key==='Enter')saveAddonForm()"></div>
+      <div class="field"><label>加价金额（元） <i class="req">*</i></label>
+        <div style="position:relative">
+          <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink-2)">¥</span>
+          <input id="adPrice" type="number" min="0" step="0.5" placeholder="0.00" style="padding-left:26px" onkeydown="if(event.key==='Enter')saveAddonForm()">
+        </div>
+        <div class="form-hint">顾客加购该选项时在菜品原价基础上加收</div>
+      </div>
+      <div class="field"><label>每单限选数量</label>
+        <select id="adLimit" style="height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:13px;background:#fff">
+          <option value="0">不限</option><option value="1">最多 1 份</option><option value="2">最多 2 份</option><option value="3">最多 3 份</option>
+        </select>
+        <div class="form-hint">如"煎蛋"通常限 1-2 份，防止误加多份</div>
+      </div>
+      <div class="form-err" id="adErr"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cancelAddonForm()">取消</button>
+      <button class="btn primary" onclick="saveAddonForm()">保存</button>
+    </div>
+  </div>
+
+  <!-- 桌台表单（新增/编辑） -->
+  <div class="modal" id="tableFormModal" style="width:400px">
+    <div class="modal-head"><div class="t" id="tableFormTitle">新增桌台</div><button class="icon-btn" onclick="cancelTableForm()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>桌号 <i class="req">*</i></label><input id="tnoInput" placeholder="如：D-02 / 包间-02" onkeydown="if(event.key==='Enter')saveTableForm()"></div>
+      <div class="field"><label>所属区域 <i class="req">*</i></label>
+        <select id="tnoArea" style="height:38px;border:1px solid var(--line);border-radius:10px;padding:0 10px;font-size:13px;background:#fff"></select>
+        <div class="form-hint">区域在左侧「桌台区域」中维护；收银台按区域分组展示桌台</div>
+      </div>
+      <div class="form-err" id="tnoErr"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="cancelTableForm()">取消</button>
+      <button class="btn primary" onclick="saveTableForm()">保存</button>
+    </div>
+  </div>
+
+  <!-- 单桌二维码 -->
+  <div class="modal" id="qrOneModal" style="width:340px">
+    <div class="modal-head"><div class="t num" id="qrOneTitle">点桌二维码</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" style="text-align:center">
+      <div class="qr-box lg" id="qrOneBox"></div>
+      <div style="font-size:12px;color:var(--ink-2)" id="qrOneMeta"></div>
+      <div style="margin-top:12px;text-align:left">
+        <div style="font-size:11px;color:var(--ink-3);margin-bottom:4px">点桌链接（贴码后顾客扫码即带桌号进入点餐）</div>
+        <div class="mono" id="qrOneLink" style="background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11px;word-break:break-all"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn" onclick="copyQrLink()">复制链接</button>
+      <button class="btn primary" onclick="closeModal();toast('已下载单桌二维码图片（示意）')">下载图片</button>
+    </div>
+  </div>
+
+  <!-- 订单详情（流水） -->
+  <div class="modal" id="flowDetailModal" style="width:440px">
+    <div class="modal-head"><div class="t">订单详情</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="flowDetailBody"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">关闭</button></div>
+  </div>
+
+  <div class="modal" id="logDetailModal" style="width:420px">
+    <div class="modal-head"><div class="t">打印日志详情</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="logDetailBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn primary" id="logDetailReprintBtn">重打单据</button>
+    </div>
+  </div>
+
+  <!-- 操作日志详情 -->
+  <div class="modal" id="opDetailModal" style="width:420px">
+    <div class="modal-head"><div class="t">操作日志详情</div><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="opDetailBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">关闭</button>
+      <button class="btn danger" id="opDetailDelBtn">删除该记录</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 模拟数据 ================= */
+const CATS = ["热销推荐","招牌主食","小吃凉菜","汤品","饮品甜点"];
+const DISHES = [
+  { id:"d1", name:"招牌水煮牛肉", cat:"热销推荐", price:42, soldOut:false, sort:1, specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:3}]},{name:"辣度",options:[{n:"不辣",d:0},{n:"微辣",d:0},{n:"中辣",d:0},{n:"特辣",d:0}]}], addons:["加宽粉","加豆腐","加牛肉 50g"] },
+  { id:"d2", name:"家常红烧肉", cat:"热销推荐", price:36, soldOut:false, sort:2, specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:2}]}], addons:["加卤蛋","加米饭"] },
+  { id:"d3", name:"香辣小龙虾", cat:"热销推荐", price:88, soldOut:false, sort:3, specs:[{name:"份量",options:[{n:"1斤",d:0},{n:"2斤",d:76}]},{name:"辣度",options:[{n:"微辣",d:0},{n:"中辣",d:0},{n:"爆辣",d:0}]}], addons:[] },
+  { id:"d4", name:"凉拌木耳", cat:"小吃凉菜", price:14, soldOut:true, sort:1, specs:[], addons:[] },
+  { id:"d5", name:"手工水饺(12只)", cat:"招牌主食", price:22, soldOut:false, sort:1, specs:[{name:"做法",options:[{n:"水饺",d:0},{n:"煎饺",d:3}]}], addons:["加一份(6只)"] },
+  { id:"d6", name:"扬州炒饭", cat:"招牌主食", price:18, soldOut:false, sort:2, specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:6}]}], addons:["加蛋","加虾仁"] },
+  { id:"d7", name:"葱油拌面", cat:"招牌主食", price:12, soldOut:false, sort:3, specs:[{name:"辣度",options:[{n:"不辣",d:0},{n:"微辣",d:0},{n:"中辣",d:0}]}], addons:["加煎蛋","加荷包蛋"] },
+  { id:"d8", name:"白米饭", cat:"招牌主食", price:2, soldOut:false, sort:4, specs:[], addons:[] },
+  { id:"d9", name:"椒盐鸡米花", cat:"小吃凉菜", price:16, soldOut:false, sort:2, specs:[{name:"辣度",options:[{n:"原味",d:0},{n:"微辣",d:0}]}], addons:[] },
+  { id:"d10", name:"口水鸡", cat:"小吃凉菜", price:28, soldOut:false, sort:3, specs:[{name:"辣度",options:[{n:"微辣",d:0},{n:"中辣",d:0}]}], addons:[] },
+  { id:"d11", name:"番茄蛋花汤", cat:"汤品", price:12, soldOut:false, sort:1, specs:[], addons:[] },
+  { id:"d12", name:"筒骨玉米汤", cat:"汤品", price:22, soldOut:false, sort:2, specs:[{name:"份量",options:[{n:"例汤",d:0},{n:"大盅",d:8}]}], addons:[] },
+  { id:"d13", name:"手打柠檬茶", cat:"饮品甜点", price:13, soldOut:false, sort:1, specs:[{name:"温度",options:[{n:"正常冰",d:0},{n:"少冰",d:0},{n:"去冰",d:0},{n:"常温",d:0}]},{name:"糖度",options:[{n:"正常糖",d:0},{n:"半糖",d:0},{n:"无糖",d:0}]}], addons:["加小料(椰果)"] },
+  { id:"d14", name:"杨枝甘露", cat:"饮品甜点", price:16, soldOut:false, sort:2, specs:[{name:"冰度",options:[{n:"正常冰",d:0},{n:"少冰",d:0},{n:"去冰",d:0}]}], addons:[] },
+  { id:"d15", name:"红糖糍粑", cat:"饮品甜点", price:12, soldOut:true, sort:3, specs:[], addons:[] },
+];
+const ADDONS = [
+  { id:"a1", name:"加蛋", price:2, limit:2, bind:["d6"] },
+  { id:"a2", name:"加牛肉 50g", price:9, limit:1, bind:["d1"] },
+  { id:"a3", name:"加宽粉", price:3, limit:1, bind:["d1"] },
+  { id:"a4", name:"加卤蛋", price:2, limit:2, bind:["d2"] },
+  { id:"a5", name:"加小料(椰果)", price:2, limit:0, bind:["d13"] },
+  { id:"a6", name:"加豆腐", price:3, limit:2, bind:["d1"] },
+  { id:"a7", name:"加米饭", price:2, limit:0, bind:["d2"] },
+  { id:"a8", name:"加一份(6只)", price:11, limit:1, bind:["d5"] },
+  { id:"a9", name:"加虾仁", price:6, limit:1, bind:["d6"] },
+  { id:"a10", name:"加煎蛋", price:2, limit:2, bind:["d7"] },
+  { id:"a11", name:"加荷包蛋", price:3, limit:2, bind:["d7"] },
+];
+let AREAS = ["A区", "B区", "C区", "包间"];
+let TABLES = ["A-01","A-02","A-03","A-05","B-02","B-06","C-01","C-04","包间-01"]
+  .map(t => ({ id: t, area: t.startsWith("包间") ? "包间" : t[0] + "区" }));
+let ORDERS = [
+  { no:"202611271030112", tableId:"A-05", people:4, time:"11-27 10:30", status:"pending", note:"少辣；儿童餐具×1",
+    items:[ {dishId:"d1",name:"招牌水煮牛肉",specText:"大份/微辣 · 加宽粉",price:45,qty:1,returned:false},
+            {dishId:"d5",name:"手工水饺(12只)",specText:"水饺",price:22,qty:2,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:4,returned:false},
+            {dishId:"d11",name:"番茄蛋花汤",specText:"默认",price:12,qty:1,returned:false} ] },
+  { no:"202611271042218", tableId:"B-02", people:2, time:"11-27 10:42", status:"hold", note:"",
+    items:[ {dishId:"d3",name:"香辣小龙虾",specText:"1斤/中辣",price:88,qty:1,returned:false},
+            {dishId:"d13",name:"手打柠檬茶",specText:"少冰/半糖",price:13,qty:2,returned:false} ] },
+  { no:"202611270912230", tableId:"A-02", people:2, time:"11-27 09:12", status:"paid", payMethod:"微信静态码", note:"",
+    items:[ {dishId:"d7",name:"葱油拌面",specText:"不辣",price:12,qty:2,returned:false},
+            {dishId:"d13",name:"手打柠檬茶",specText:"少冰/半糖",price:13,qty:1,returned:false} ] },
+  { no:"202611270928055", tableId:"B-06", people:3, time:"11-27 09:28", status:"paid", payMethod:"现金", note:"",
+    items:[ {dishId:"d2",name:"家常红烧肉",specText:"小份",price:36,qty:1,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:3,returned:false},
+            {dishId:"d11",name:"番茄蛋花汤",specText:"默认",price:12,qty:1,returned:false} ] },
+  { no:"202611270945116", tableId:"C-04", people:4, time:"11-27 09:45", status:"paid", payMethod:"支付宝静态码", note:"",
+    items:[ {dishId:"d3",name:"香辣小龙虾",specText:"1斤/中辣",price:88,qty:1,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:4,returned:false},
+            {dishId:"d13",name:"手打柠檬茶",specText:"正常冰",price:13,qty:2,returned:false} ] },
+  { no:"202611271005140", tableId:"A-03", people:2, time:"11-27 10:05", status:"paid", payMethod:"微信静态码", note:"少辣",
+    items:[ {dishId:"d1",name:"招牌水煮牛肉",specText:"大份/微辣",price:45,qty:1,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:2,returned:false} ] },
+  { no:"202611271018207", tableId:"包间-01", people:8, time:"11-27 10:18", status:"paid", payMethod:"现金", note:"上菜快一些",
+    items:[ {dishId:"d1",name:"招牌水煮牛肉",specText:"大份/中辣",price:45,qty:2,returned:false},
+            {dishId:"d2",name:"家常红烧肉",specText:"大份",price:38,qty:2,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:8,returned:false},
+            {dishId:"d11",name:"番茄蛋花汤",specText:"大盅",price:12,qty:2,returned:false},
+            {dishId:"d13",name:"手打柠檬茶",specText:"少冰/半糖",price:13,qty:4,returned:false} ] },
+  { no:"202611271032018", tableId:"B-06", people:2, time:"11-27 10:32", status:"paid", payMethod:"其他", note:"",
+    items:[ {dishId:"d6",name:"扬州炒饭",specText:"大份",price:24,qty:1,returned:false},
+            {dishId:"d7",name:"葱油拌面",specText:"微辣",price:12,qty:1,returned:false} ] },
+  { no:"202611271048083", tableId:"C-01", people:3, time:"11-27 10:48", status:"paid", payMethod:"微信静态码", note:"",
+    items:[ {dishId:"d5",name:"手工水饺(12只)",specText:"水饺",price:22,qty:2,returned:false},
+            {dishId:"d11",name:"番茄蛋花汤",specText:"默认",price:12,qty:1,returned:false} ] },
+  { no:"202611271102245", tableId:"A-02", people:5, time:"11-27 11:02", status:"paid", payMethod:"现金", note:"",
+    items:[ {dishId:"d1",name:"招牌水煮牛肉",specText:"大份/中辣",price:45,qty:2,returned:false},
+            {dishId:"d4",name:"凉拌木耳",specText:"默认",price:14,qty:1,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:5,returned:false},
+            {dishId:"d12",name:"筒骨玉米汤",specText:"大盅",price:30,qty:2,returned:false} ] },
+  { no:"202611271121309", tableId:"A-01", people:3, time:"11-27 11:21", status:"paid", payMethod:"支付宝静态码", note:"",
+    items:[ {dishId:"d3",name:"香辣小龙虾",specText:"1斤/中辣",price:88,qty:1,returned:false},
+            {dishId:"d5",name:"手工水饺(12只)",specText:"水饺",price:22,qty:1,returned:false} ] },
+  { no:"202611271133482", tableId:"C-04", people:2, time:"11-27 11:33", status:"paid", payMethod:"微信静态码", note:"",
+    items:[ {dishId:"d2",name:"家常红烧肉",specText:"小份",price:36,qty:1,returned:false},
+            {dishId:"d8",name:"白米饭",specText:"默认",price:2,qty:2,returned:false},
+            {dishId:"d14",name:"杨枝甘露",specText:"正常冰",price:16,qty:2,returned:false} ] },
+  { no:"202611271012365", tableId:"C-01", people:3, time:"11-27 10:12", status:"paid", payMethod:"现金", note:"",
+    items:[ {dishId:"d2",name:"家常红烧肉",specText:"小份 · 加卤蛋",price:36,qty:1,returned:false},
+            {dishId:"d6",name:"扬州炒饭",specText:"大份",price:24,qty:1,returned:false} ] },
+  { no:"202611270956008", tableId:"A-01", people:1, time:"11-27 09:56", status:"paid", payMethod:"微信静态码", note:"",
+    items:[ {dishId:"d7",name:"葱油拌面",specText:"微辣 · 加煎蛋",price:12,qty:1,returned:false} ] },
+  { no:"202611270940471", tableId:"B-06", people:2, time:"11-27 09:40", status:"cancel", note:"",
+    items:[ {dishId:"d4",name:"凉拌木耳",specText:"默认",price:14,qty:1,returned:false} ] },
+];
+let PRINTERS = [
+  { id:"p1", name:"后厨打印机", ip:"192.168.1.52", port:9100, use:"后厨小票", online:true },
+  { id:"p2", name:"前台打印机", ip:"192.168.1.53", port:9100, use:"顾客结账单", online:true },
+];
+let PRINT_LOG = [
+  { id:"L5", time:"11-27 10:30", orderNo:"202611271030112", printer:"后厨打印机", type:"后厨小票", status:"成功", reason:"" },
+  { id:"L4", time:"11-27 10:12", orderNo:"202611271012365", printer:"后厨打印机", type:"后厨小票", status:"成功", reason:"" },
+  { id:"L3", time:"11-27 10:12", orderNo:"202611271012365", printer:"前台打印机", type:"顾客结账单", status:"成功", reason:"" },
+  { id:"L2", time:"11-27 09:56", orderNo:"202611270956008", printer:"后厨打印机", type:"后厨小票", status:"失败", reason:"连接超时 (192.168.1.52:9100)" },
+  { id:"L1", time:"11-27 09:57", orderNo:"202611270956008", printer:"后厨打印机", type:"后厨小票", status:"成功", reason:"手动重打" },
+];
+let USERS = [
+  { name:"admin", role:"管理员", enabled:true },
+  { name:"cashier01", role:"收银员", enabled:true },
+  { name:"cashier02", role:"收银员", enabled:false },
+];
+/* 操作日志（对应 DB sys_operation_log）：登录/订单/打印/配置变更全量留痕 */
+const OP_ACTIONS = {
+  LOGIN:        "登录",
+  ORDER_MODIFY: "改单",
+  ORDER_HUNG:   "挂单",
+  ORDER_RESUME: "恢复订单",
+  ORDER_CANCEL: "整单取消",
+  ITEM_RETURN:  "退菜",
+  ORDER_SETTLE: "订单结算",
+  PRINT_REPRINT:"手动重打",
+  PRINTER_SAVE: "打印机维护",
+  PRINTER_TEST: "打印机测试",
+  TEMPLATE_SAVE:"模板修改",
+  DISH_SAVE:    "菜品维护",
+  DISH_DEL:     "菜品删除",
+  USER_SAVE:    "账号维护",
+  PERM_SAVE:    "权限修改",
+  SETTINGS_SAVE:"系统设置",
+};
+const OP_TAG = { LOGIN:"tag off", ORDER_MODIFY:"tag pending", ORDER_HUNG:"tag pending", ORDER_RESUME:"tag pending",
+  ORDER_CANCEL:"tag cancel", ITEM_RETURN:"tag cancel", ORDER_SETTLE:"tag ok", PRINT_REPRINT:"tag off",
+  PRINTER_SAVE:"tag pending", PRINTER_TEST:"tag off", TEMPLATE_SAVE:"tag pending", DISH_SAVE:"tag pending",
+  DISH_DEL:"tag cancel", USER_SAVE:"tag pending", PERM_SAVE:"tag cancel", SETTINGS_SAVE:"tag pending" };
+let OP_LOG = [
+  { id:"O9",  time:"11-27 10:30", user:"cashier01", action:"ORDER_SETTLE", target:"202611271030112", detail:"A-03 桌 · 微信静态码 · 实收 ¥128.00", ip:"192.168.1.24" },
+  { id:"O8",  time:"11-27 10:12", user:"cashier01", action:"ORDER_MODIFY", target:"202611271012365", detail:"新增菜品 1 个，后厨小票重打", ip:"192.168.1.24" },
+  { id:"O7",  time:"11-27 09:58", user:"admin",     action:"PRINTER_TEST", target:"后厨打印机", detail:"192.168.1.52:9100 · 连接超时", ip:"192.168.1.10" },
+  { id:"O6",  time:"11-27 09:57", user:"admin",     action:"PRINT_REPRINT", target:"202611270956008", detail:"后厨小票 · 手动重打", ip:"192.168.1.10" },
+  { id:"O5",  time:"11-27 09:45", user:"admin",     action:"SETTINGS_SAVE", target:"系统设置", detail:"修改小票抬头", ip:"192.168.1.10" },
+  { id:"O4",  time:"11-27 09:40", user:"cashier01", action:"ITEM_RETURN", target:"202611271012365", detail:"退 1 个菜品：凉拌木耳 · 原因顾客不吃辣（误点）", ip:"192.168.1.24" },
+  { id:"O3",  time:"11-27 09:31", user:"cashier01", action:"LOGIN", target:"后台登录", detail:"登录成功（收银员）", ip:"192.168.1.24" },
+  { id:"O2",  time:"11-27 09:02", user:"admin",     action:"PERM_SAVE", target:"角色菜单权限", detail:"收银员开放「菜品管理」", ip:"192.168.1.10" },
+  { id:"O1",  time:"11-27 08:55", user:"admin",     action:"LOGIN", target:"后台登录", detail:"登录成功（管理员）", ip:"192.168.1.10" },
+];
+let _opSeq = 100;
+function opLog(action, target, detail) {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  OP_LOG.unshift({ id: "O" + (_opSeq++), time: `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`, user: currentUser.name, action, target, detail: detail || "", ip: "192.168.1.24" });
+}
+const SETTINGS = { shopName:"灶火人家·家常菜", receiptTitle:"灶火人家·家常菜 欢迎光临", openTime:"10:30", closeTime:"21:30", roundOff:true };
+const TPL = {
+  kitchen: "【后厨单】{table}桌\n单号：{order_no}\n--------------------------------\n{items}\n--------------------------------\n备注：{note}\n下单时间：{time}",
+  bill: "{title}\n结账单\n单号：{order_no}\n--------------------------------\n桌号：{table}\n{items}\n--------------------------------\n合计：{total}\n抹零：{off}\n应收：{payable}\n{time}",
+};
+let REV7 = [
+  { d:"11-21", v:1862 }, { d:"11-22", v:2140 }, { d:"11-23", v:1720 },
+  { d:"11-24", v:2290 }, { d:"11-25", v:2055 }, { d:"11-26", v:2418 }, { d:"11-27", v:0 },
+];
+let RANK7 = [
+  { name:"招牌水煮牛肉", qty:86 }, { name:"手工水饺(12只)", qty:72 },
+  { name:"葱油拌面", qty:65 }, { name:"手打柠檬茶", qty:54 }, { name:"家常红烧肉", qty:47 },
+];
+let RETURN7 = [
+  { name:"凉拌木耳", cnt:3, amt:42, reason:"顾客不吃辣（误点）" },
+  { name:"香辣小龙虾", cnt:1, amt:88, reason:"出餐慢顾客取消" },
+];
+/* 报表辅助种子数据 */
+const LAST_WEEK_REV = 13120;                       // 上周营收（环比基数）
+const YDA_ORDERS = 31, YDA_AVG = 78;               // 昨日订单数 / 客单价
+const WEEK_ORDERS = 168;                           // 近 7 日订单数
+const PAY7 = [                                     // 近 7 日结算对账
+  { m:"现金", cnt:52, amt:4866 }, { m:"微信静态码", cnt:71, amt:5620 },
+  { m:"支付宝静态码", cnt:33, amt:2842 }, { m:"其他", cnt:12, amt:1157 },
+];
+const RETURN_STATS = { today: { cnt:1, amt:42 }, "7d": { cnt:4, amt:130 } };
+const RETURN_TODAY = [                              // 今日退菜明细（口径=今日）
+  { name:"凉拌木耳", cnt:1, amt:42, reason:"顾客不吃辣（误点）" },
+];
+const TREND_HIST = [                                // 近 30 日趋势：11-27 往前推 23 天（10-29 ~ 11-20）
+  { d:"10-29", v:1720 }, { d:"10-30", v:1895 }, { d:"10-31", v:1650 },
+  { d:"11-01", v:2100 }, { d:"11-02", v:2280 }, { d:"11-03", v:1760 },
+  { d:"11-04", v:1930 }, { d:"11-05", v:2050 }, { d:"11-06", v:1580 },
+  { d:"11-07", v:2205 }, { d:"11-08", v:2380 }, { d:"11-09", v:1810 },
+  { d:"11-10", v:1990 }, { d:"11-11", v:2140 }, { d:"11-12", v:1690 },
+  { d:"11-13", v:2320 }, { d:"11-14", v:2260 }, { d:"11-15", v:1875 },
+  { d:"11-16", v:2040 }, { d:"11-17", v:2185 }, { d:"11-18", v:1590 },
+  { d:"11-19", v:2240 }, { d:"11-20", v:2360 },
+];
+const SLOW7 = [                                    // 滞销提醒
+  { name:"凉拌木耳", qty:2 }, { name:"红糖糍粑", qty:2 },
+  { name:"筒骨玉米汤", qty:3 }, { name:"杨枝甘露", qty:5 },
+];
+const STAPLES = ["白米饭"];                        // 主食不计入菜品排行
+
+/* ================= 全局状态 ================= */
+let role = "admin";            // admin | cashier
+let selTableId = null;
+let selOrderNo = null;
+let payMethod = "现金";
+let curCat = "";
+let editingDishId = null;
+
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.round(n * 100) / 100).toFixed(2).replace(/\.00$/, "");
+const fmt2 = n => (Math.round(n * 100) / 100).toFixed(2);
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove("show"), 2000);
+}
+function openModal(id) {
+  document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
+  $("mask").classList.add("show");
+  $(id).style.display = "flex";
+}
+function closeModal() {
+  $("mask").classList.remove("show");
+  document.querySelectorAll(".modal").forEach(m => m.style.display = "none");
+}
+function orderTotal(o) {
+  return o.items.filter(i => !i.returned).reduce((s, i) => s + i.price * i.qty, 0);
+}
+function orderQty(o) { return o.items.filter(i => !i.returned).reduce((s, i) => s + i.qty, 0); }
+const STATUS_TXT = { pending:"待结算", hold:"挂单", paid:"已结清", cancel:"已取消" };
+const STATUS_TAG = { pending:"pending", hold:"hold", paid:"ok", cancel:"cancel" };
+
+/* 通用输入 / 确认弹窗（替代原生 prompt / confirm） */
+let _promptCb = null, _confirmCb = null;
+function askInput(title, label, def, cb, okText = "确定") {
+  _promptCb = cb;
+  $("promptTitle").textContent = title;
+  $("promptLabel").textContent = label;
+  $("promptInput").value = def || "";
+  $("promptOkBtn").textContent = okText;
+  openModal("promptModal");
+  setTimeout(() => { $("promptInput").focus(); $("promptInput").select(); }, 60);
+}
+function promptOk() {
+  const v = $("promptInput").value.trim();
+  if (!v) { toast("请输入内容"); return; }
+  closeModal();
+  const cb = _promptCb; _promptCb = null;
+  cb && cb(v);
+}
+function askConfirm(title, html, cb, okText = "确认", warnHidden = false) {
+  _confirmCb = cb;
+  $("confirmTitle").textContent = title;
+  $("confirmText").innerHTML = html;
+  $("confirmWarn").style.display = warnHidden ? "none" : "block";
+  $("confirmOkBtn").textContent = okText;
+  openModal("confirmModal");
+}
+function confirmOk() {
+  closeModal();
+  const cb = _confirmCb; _confirmCb = null;
+  cb && cb();
+}
+
+/* 数字滚动动画 */
+function animateNum(el, target, decimals = 0) {
+  if (!el) return;
+  const from = el._v ?? 0;
+  el._v = target;
+  const t0 = performance.now(), dur = 480;
+  const fixed = v => decimals ? v.toFixed(decimals) : String(Math.round(v));
+  function step(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(from + (target - from) * e);
+    if (p < 1) requestAnimationFrame(step);
+    else el.textContent = decimals ? fmt2(target) : fmt(target);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ================= 登录 / 角色 ================= */
+function demoLogin(r) {
+  $("loginUser").value = r === "admin" ? "admin" : "cashier01";
+  doLogin(r);
+}
+function doLogin(r) {
+  role = r || ($("loginUser").value.trim() === "cashier01" ? "cashier" : "admin");
+  const uname = $("loginUser").value.trim() || "admin";
+  const roleTxt = role === "admin" ? "管理员" : "收银员";
+  currentUser = USERS.find(u => u.name === uname && u.role === roleTxt)
+    || USERS.find(u => u.role === roleTxt && u.enabled)   // 账号名与角色不匹配时，按角色取默认启用账号
+    || { name: uname, role: roleTxt, enabled: true };
+  $("loginScreen").style.display = "none";
+  $("appShell").classList.add("show");
+  $("userName").textContent = currentUser.name;
+  $("userRole").textContent = currentUser.role;
+  $("userAvatar").textContent = currentUser.name[0].toUpperCase();
+  buildNav();
+  const landing = NAVS.find(n => n.id && roleHasMenu(n.id));
+  switchPage(landing ? landing.id : "cashier");
+  opLog("LOGIN", "后台登录", `登录成功（${currentUser.role}）`);
+  toast(`欢迎，${currentUser.name}（${currentUser.role}）`);
+}
+function logout() {
+  $("appShell").classList.remove("show");
+  $("loginScreen").style.display = "flex";
+  closeModal();
+}
+let currentUser = { name: "admin", role: "管理员" };
+
+/* ================= 导航 ================= */
+const NAVS = [
+  { group: "营业操作" },
+  { id: "cashier", name: "收银台", icon: "M6 8h5l6 22h18l5-14H14", perm: "all" },
+  { group: "商家管理（仅管理员）" },
+  { id: "dishes", name: "菜品管理", icon: "M8 12h32M8 24h32M8 36h18", perm: "admin" },
+  { id: "tables", name: "桌台管理", icon: "M6 10h36v10H6zM6 28h36v10H6z", perm: "admin" },
+  { id: "printer", name: "打印配置", icon: "M14 8h20v10H14zM10 22h28v14H10zM16 30h10", perm: "admin" },
+  { id: "orders", name: "订单流水", icon: "M14 6h16l8 8v28H14zM22 6v8h8M20 24h10M20 32h10", perm: "admin" },
+  { id: "reports", name: "轻量报表", icon: "M8 40V24M20 40V12M32 40V20M40 40V28", perm: "admin" },
+  { id: "audit", name: "操作日志", icon: "M10 8h20l8 8v24H10zM18 24h12M18 32h12M18 16h6", perm: "admin" },
+  { id: "settings", name: "系统设置", icon: "M24 30a6 6 0 100-12 6 6 0 000 12zM38 24l4-4-6-6-4 4a14 14 0 00-6-2l-2-5h-8l-2 5a14 14 0 00-6 2l-4-4-6 6 4 4", perm: "admin" },
+];
+const PAGE_TITLES = { cashier:"收银台", dishes:"菜品管理", tables:"桌台管理", printer:"局域网打印配置", orders:"订单流水查询", reports:"轻量化报表", audit:"操作日志", settings:"系统设置" };
+/* 角色菜单权限：管理员固定全量；收银员可由管理员在「系统设置 → 角色菜单权限」中配置 */
+const ADMIN_MENU_IDS = ["dishes", "tables", "printer", "orders", "reports", "audit", "settings"];
+let ROLE_MENUS = { cashier: { cashier: true } };          // 收银员可见菜单（未配置的菜单不可见）
+const DEFAULT_CASHIER_MENUS = { cashier: true };
+function roleHasMenu(menuId, r = role) {
+  if (r === "admin") return true;
+  return !!ROLE_MENUS.cashier[menuId];
+}
+function buildNav() {
+  const showAdminGroup = ADMIN_MENU_IDS.some(id => roleHasMenu(id));
+  $("navBox").innerHTML = NAVS.map(n => {
+    if (n.group) {
+      if (n.group.includes("仅管理员")) {
+        if (!showAdminGroup) return "";
+        return `<div class="nav-group">${role === "admin" ? n.group : "商家管理"}</div>`;
+      }
+      return `<div class="nav-group">${n.group}</div>`;
+    }
+    if (!roleHasMenu(n.id)) return "";
+    return `<div class="nav-item ${n.id === curPage ? "active" : ""}" onclick="switchPage('${n.id}')">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
+      ${n.name}</div>`;
+  }).join("");
+}
+let curPage = "cashier";
+function switchPage(id) {
+  if (!roleHasMenu(id)) { toast("当前角色无权限访问"); return; }
+  curPage = id;
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("show"));
+  $("page-" + id).classList.add("show");
+  $("pageTitle").textContent = PAGE_TITLES[id];
+  buildNav();
+  renderAll(id);
+}
+function renderAll(id) {
+  refreshToday();
+  if (id === "cashier") { renderTables(); renderCashierOrder(); }
+  if (id === "dishes") { renderCatList(); renderDishRows(); renderAddons(); }
+  if (id === "tables") { renderAreaList(); renderTableRows(); }
+  if (id === "printer") { renderPrinters(); initLogFilter(); renderPrintLog(); initTpl(); }
+  if (id === "orders") { initFlowFilter(); renderOrderFlow(); }
+  if (id === "audit") { initAuditFilter(); renderAudit(); }
+  if (id === "reports") renderReports();
+  if (id === "settings") initSettings();
+}
+function refreshToday() {
+  const today = ORDERS.filter(o => o.status !== "cancel");
+  const revenue = ORDERS.filter(o => o.status === "paid").reduce((s, o) => s + (o.settleAmount ?? orderTotal(o)), 0);
+  const pend = ORDERS.filter(o => o.status === "pending").length;
+  const hold = ORDERS.filter(o => o.status === "hold").length;
+  animateNum($("todayOrders"), today.length);
+  animateNum($("todayRevenue"), revenue, 2);
+  animateNum($("stOrders"), today.length);
+  animateNum($("stRevenue"), revenue, 2);
+  animateNum($("stAvg"), paidsAvg(revenue), 2);
+  $("stOrdersDelta").innerHTML = `待结算 <b>${pend}</b> · 挂单 <b>${hold}</b> · 已结清 <b>${today.length - pend - hold}</b>`;
+  // 结算方式分布
+  const paid = ORDERS.filter(o => o.status === "paid");
+  const byM = {};
+  paid.forEach(o => { byM[o.payMethod || "其他"] = (byM[o.payMethod || "其他"] || 0) + 1; });
+  $("stRevenueDelta").innerHTML = paid.length
+    ? Object.entries(byM).map(([m, c]) => `${m} <b>×${c}</b>`).join(" · ")
+    : "今日暂无已结清订单";
+  $("stTables").textContent = (pend + hold) + "/" + TABLES.length;
+  const busyTables = TABLES.filter(t => ORDERS.some(o => o.tableId === t.id && (o.status === "pending" || o.status === "hold")));
+  $("stTablesDelta").innerHTML = busyTables.length
+    ? `占用桌台：<b>${busyTables.map(t => t.id).join("、")}</b>`
+    : "所有桌台空闲";
+}
+function paidsAvg(revenue) {
+  const paid = ORDERS.filter(o => o.status === "paid");
+  return paid.length ? revenue / paid.length : 0;
+}
+
+/* ================= 收银台 ================= */
+/* 桌台概览：图例筛选 + 区域分组 + 开台时长 */
+let tableFilter = "all"; // all | pending | hold | idle
+function setTableFilter(f) { tableFilter = f; renderTables(); }
+function openDuration(o) {
+  const [h, m] = o.time.slice(6, 11).split(":").map(Number);
+  const d = new Date();
+  let mins = Math.max(0, (d.getHours() * 60 + d.getMinutes()) - (h * 60 + m));
+  return mins >= 60 ? Math.floor(mins / 60) + "小时" + (mins % 60 || "") + "分" : mins + "分钟";
+}
+function areaOf(t) { return t.area || (t.id.startsWith("包间") ? "包间" : t.id[0] + " 区"); }
+function renderTables() {
+  const rows = TABLES.map(t => ({
+    t,
+    o: ORDERS.find(o => o.tableId === t.id && (o.status === "pending" || o.status === "hold"))
+  }));
+  const cnt = { pending: 0, hold: 0, idle: 0 };
+  rows.forEach(r => cnt[r.o ? (r.o.status === "hold" ? "hold" : "pending") : "idle"]++);
+  $("tblLegend").innerHTML = [
+    ["all", "全部", rows.length, "#17181c"],
+    ["pending", "待结算", cnt.pending, "var(--warn)"],
+    ["hold", "挂单", cnt.hold, "#7c8aa0"],
+    ["idle", "空闲", cnt.idle, "#c8ccd2"],
+  ].map(([k, label, n, c]) => `
+    <button class="lg-chip ${tableFilter === k ? "active" : ""}" onclick="setTableFilter('${k}')">
+      <i style="background:${c}"></i>${label} <b class="num">${n}</b>
+    </button>`).join("");
+  const filtered = rows.filter(r =>
+    tableFilter === "all" ? true : tableFilter === "idle" ? !r.o : (r.o && r.o.status === tableFilter));
+  if (!filtered.length) {
+    $("tableGrid").innerHTML = `<div class="empty">当前筛选下暂无桌台</div>`;
+    refreshToday();
+    return;
+  }
+  // 区域分组顺序跟随区域管理中的排序，未定义区域兜底在后
+  const setAreas = [...new Set(filtered.map(r => areaOf(r.t)))];
+  const areas = AREAS.filter(a => setAreas.includes(a)).concat(setAreas.filter(a => !AREAS.includes(a)));
+  $("tableGrid").innerHTML = areas.map(area => {
+    const list = filtered.filter(r => areaOf(r.t) === area);
+    return `<div class="table-sec-t">${area}<span style="font-weight:400">· ${list.length} 桌</span></div>
+      <div class="table-grid">${list.map(({ t, o }) => {
+        const cls = o ? (o.status === "hold" ? "busy hold" : "busy") : "idle";
+        const sel = t.id === selTableId ? "sel" : "";
+        return `<div class="table-card ${cls} ${sel}" onclick="selectTable('${t.id}')">
+          <span class="tbadge">${o ? (o.status === "hold" ? "挂单" : "待结算") : "空闲"}</span>
+          <div class="tno num">${t.id}</div>
+          ${o
+            ? `<div class="amount num">¥${fmt(orderTotal(o))}</div>
+               <div class="tmeta"><span class="num">${o.people}人 · ${orderQty(o)}件</span><span class="num">${openDuration(o)}</span></div>`
+            : `<div class="tst">尚未开台，顾客扫码后生成订单</div>`}
+        </div>`;
+      }).join("")}</div>`;
+  }).join("");
+  refreshToday();
+}
+function selectTable(tid) {
+  selTableId = tid;
+  const order = ORDERS.find(o => o.tableId === tid && (o.status === "pending" || o.status === "hold"));
+  selOrderNo = order ? order.no : null;
+  renderTables(); renderCashierOrder();
+}
+function renderCashierOrder() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  $("orderEmpty").style.display = o ? "none" : "block";
+  $("orderDetail").style.display = o ? "block" : "none";
+  if (!o) return;
+  $("opTitle").textContent = `${o.tableId} 桌 · ${o.people} 人`;
+  $("opStatus").innerHTML = `<span class="tag ${STATUS_TAG[o.status]}">${STATUS_TXT[o.status]}</span>`;
+  $("opMeta").textContent = `订单号 ${o.no} · 下单时间 ${o.time} · 堂食`;
+  $("opItems").innerHTML = o.items.map((i, idx) => `
+    <div class="oi-row ${i.returned ? "returned" : ""}">
+      <div class="oi-name">${i.name}${i.returned ? ' <span class="tag cancel" style="font-size:10px;padding:1px 6px">已退</span>' : ""}
+        <span class="spec num">${i.specText}</span></div>
+      <div class="oi-qty num">×${i.qty}</div>
+      <div class="oi-price num">¥${fmt(i.price * i.qty)}</div>
+      ${(o.status === "pending" || o.status === "hold") && !i.returned ? `<button class="btn sm danger" onclick="openReturn(${idx})">退菜</button>` : ""}
+    </div>`).join("");
+  $("opNote").innerHTML = o.note ? `整单备注：<b>${o.note}</b>` : "整单备注：无";
+  const operable = o.status === "pending" || o.status === "hold";
+  $("opEditActions").style.display = operable ? "flex" : "none";
+  $("resumeBtn").style.display = o.status === "hold" ? "inline-block" : "none";
+  $("settleBox").style.display = operable ? "block" : "none";
+  $("roundOffChk").checked = SETTINGS.roundOff;
+  renderPayMethods(); renderSettle();
+}
+function renderPayMethods() {
+  const methods = ["现金", "微信静态码", "支付宝静态码", "其他"];
+  $("payMethods").innerHTML = methods.map(m =>
+    `<div class="pm ${m === payMethod ? "active" : ""}" onclick="pickPay('${m}')">${m}</div>`).join("");
+}
+function pickPay(m) { payMethod = m; renderPayMethods(); }
+function renderSettle() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  if (!o) return;
+  const goods = orderTotal(o);
+  const ret = o.items.filter(i => i.returned).reduce((s, i) => s + i.price * i.qty, 0);
+  let payable = goods;
+  const on = $("roundOffChk") && $("roundOffChk").checked;
+  const off = on ? Math.round(goods) - goods : 0;
+  payable = goods + off;
+  $("sumGoods").textContent = fmt2(goods);
+  $("sumReturn").textContent = fmt2(ret);
+  $("roundOffVal").textContent = (off >= 0 ? "-" : "+") + "¥" + fmt2(Math.abs(off));
+  $("payable").textContent = fmt2(Math.max(0, payable));
+}
+function doSearch() {
+  const kw = $("orderSearch").value.trim().toLowerCase();
+  if (!kw) { $("searchResult").innerHTML = ""; return; }
+  const list = ORDERS.filter(o => o.tableId.toLowerCase().includes(kw) || o.no.includes(kw))
+    .filter(o => o.status === "pending" || o.status === "hold");
+  $("searchResult").innerHTML = list.length ? `
+    <div class="card search-result" style="margin-bottom:14px">
+      <div class="card-title">检索结果（${list.length}）</div>
+      ${list.map(o => `<div class="oi-row" style="cursor:pointer" onclick="selectTable('${o.tableId}');$('orderSearch').value='';$('searchResult').innerHTML=''">
+        <div class="oi-name"><b class="num">${o.tableId}</b> 桌 · ${o.no}<span class="spec">${STATUS_TXT[o.status]} · ${orderQty(o)} 件 · ¥${fmt(orderTotal(o))}</span></div>
+        <span class="tag ${STATUS_TAG[o.status]}">${STATUS_TXT[o.status]}</span>
+      </div>`).join("")}
+    </div>` : `<div class="empty">未找到待结算订单</div>`;
+  if (list.length === 1) selectTable(list[0].tableId);
+}
+
+/* 退菜 */
+let returnSel = new Set();
+function doChangePwd() {
+  const o = $("pwdOld").value, n = $("pwdNew").value, n2 = $("pwdNew2").value;
+  const err = $("pwdErr");
+  const show = m => { err.textContent = m; err.style.display = "block"; };
+  err.style.display = "none";
+  if (!o) return show("请输入原密码");
+  if (n.length < 8 || n.length > 20 || !/[a-zA-Z]/.test(n) || !/\d/.test(n))
+    return show("新密码需 8-20 位，且同时包含字母和数字");
+  if (n === o) return show("新密码不能与原密码相同");
+  if (n !== n2) return show("两次输入的新密码不一致");
+  closeModal();
+  ["pwdOld", "pwdNew", "pwdNew2"].forEach(id => $(id).value = "");
+  $("pwdStrength").textContent = "";
+  toast("密码已修改，下次登录生效");
+}
+function pwdStrength() {
+  const n = $("pwdNew").value;
+  let s = 0;
+  if (n.length >= 8) s++;
+  if (/[a-zA-Z]/.test(n) && /\d/.test(n)) s++;
+  if (/[^a-zA-Z0-9]/.test(n) || n.length >= 12) s++;
+  const t = n ? ["太短", "弱", "中", "强"][s] : "";
+  const el = $("pwdStrength");
+  el.textContent = n ? "密码强度：" + t : "";
+  el.style.color = t === "强" ? "var(--ok)" : t === "中" ? "var(--warn)" : "var(--price)";
+}
+
+/* 单品退菜 */
+function openReturn(idx) {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  returnSel = new Set(idx !== undefined ? [idx] : []);
+  renderReturnItems(o);
+  renderReturnAmt(o);
+  $("reasonTags").innerHTML = QUICK_REASONS.map(r =>
+    `<span class="opt" onclick="$('returnReason').value='${r}'">${r}</span>`).join("");
+  $("returnReason").value = "";
+  openModal("returnModal");
+}
+const QUICK_REASONS = ["顾客误点", "出餐太慢", "口感问题", "上错菜品", "食材售罄"];
+function renderReturnItems(o) {
+  $("returnItems").innerHTML = o.items.map((i, idx2) =>
+    i.returned ? "" : `<span class="opt ${returnSel.has(idx2) ? "active" : ""}" onclick="toggleReturn(${idx2},this)">${i.name} ×${i.qty} ¥${fmt(i.price * i.qty)}</span>`).join("");
+}
+function renderReturnAmt(o) {
+  const amt = [...returnSel].reduce((s, idx) => s + o.items[idx].price * o.items[idx].qty, 0);
+  $("returnAmt").textContent = "¥" + fmt2(amt);
+}
+function toggleReturn(idx, el) {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  returnSel.has(idx) ? returnSel.delete(idx) : returnSel.add(idx);
+  el.classList.toggle("active");
+  renderReturnAmt(o);
+}
+function doReturn() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  if (!returnSel.size) { toast("请先选择要退的菜品"); return; }
+  returnSel.forEach(idx => {
+    o.items[idx].returned = true;
+    addLog(o.no, "后厨打印机", "后厨小票", "成功", "退菜重打");
+  });
+  const reason = $("returnReason").value.trim();
+  if (reason) o.note = (o.note ? o.note + "；" : "") + "退菜原因：" + reason;
+  opLog("ITEM_RETURN", o.no, `退 ${returnSel.size} 个菜品${reason ? " · 原因：" + reason : ""}`);
+  closeModal(); renderCashierOrder(); renderTables();
+  toast(`已退 ${returnSel.size} 个菜品，并重打后厨小票`);
+}
+
+/* 改单 */
+let newDishes = [];
+function openModify() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  $("modifyItems").innerHTML = o.items.filter(i => !i.returned).map((i, idx) => `
+    <div class="oi-row">
+      <div class="oi-name">${i.name}<span class="spec num">${i.specText}</span></div>
+      <button class="btn sm" onclick="editSpec(${idx})">改规格</button>
+      <div class="stepper" style="margin-left:0">
+        <button onclick="modQty(${idx},-1)">−</button><div class="stv num" id="mq${idx}">${i.qty}</div><button onclick="modQty(${idx},1)">＋</button>
+      </div>
+    </div>`).join("");
+  $("modifyNote").value = o.note || "";
+  $("addDishSel").innerHTML = DISHES.filter(d => !d.soldOut && !d.off)
+    .map(d => `<option value="${d.id}">${d.name} ¥${d.price}</option>`).join("");
+  newDishes = [];
+  renderNewDishes();
+  openModal("modifyModal");
+}
+function editSpec(idx) {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  const it = o.items.filter(i => !i.returned)[idx];
+  const d = DISHES.find(x => x.id === it.dishId);
+  if (d && openSpecPick("edit", idx, d.id, it.specText)) return;
+  askInput("修改规格 · " + it.name, "规格 / 加料描述", it.specText, v => {
+    it.specText = v;
+    openModify();
+    toast("规格已调整，保存改单后同步重打后厨小票");
+  }, "确定");
+}
+function modQty(idx, n) {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  const items = o.items.filter(i => !i.returned);
+  items[idx].qty = Math.max(1, items[idx].qty + n);
+  $("mq" + idx).textContent = items[idx].qty;
+}
+/* 规格选择弹窗（有规格的菜品必须逐组选择，单价 = 售价 + 各组差价） */
+let specPick = null; // {mode:'add'|'editNew'|'edit', idx, dish, sel:[]}
+function openSpecPick(mode, idx, dishId, preText) {
+  const dish = DISHES.find(x => x.id === dishId);
+  if (!dish || !dish.specs.length) return false;
+  const sel = dish.specs.map(() => 0);
+  if (preText) {
+    preText.split("/").forEach((t, gi) => {
+      if (!dish.specs[gi]) return;
+      const i = dish.specs[gi].options.findIndex(o => o.n === t.split("·")[0].trim());
+      if (i >= 0) sel[gi] = i;
+    });
+  }
+  specPick = { mode, idx, dish, sel };
+  $("specPickTitle").textContent = (mode === "edit" ? "修改规格 · " : "选择规格 · ") + dish.name;
+  renderSpecPick();
+  openModal("specPickModal");
+  return true;
+}
+function renderSpecPick() {
+  const { dish, sel } = specPick;
+  $("specPickGroups").innerHTML = dish.specs.map((g, gi) => `
+    <div class="field">
+      <label>${g.name}<span style="font-weight:400;color:var(--ink-3);font-size:11px">（单选）</span></label>
+      <div class="opt-chips">
+        ${g.options.map((o, oi) =>
+          `<span class="opt ${sel[gi] === oi ? "active" : ""}" onclick="specPick.sel[${gi}]=${oi};renderSpecPick()">${o.n}${o.d ? ` <b class="num" style="color:var(--price)">${o.d > 0 ? "+" : "-"}¥${Math.abs(o.d)}</b>` : ""}</span>`).join("")}
+      </div>
+    </div>`).join("");
+  const diff = dish.specs.reduce((s, g, gi) => s + g.options[sel[gi]].d, 0);
+  $("specPickPrice").textContent = "¥" + fmt(dish.price + diff);
+}
+function confirmSpecPick() {
+  const { mode, idx, dish, sel } = specPick;
+  // 保留原规格描述中的加料后缀（" · 加宽粉"），只替换规格部分
+  const oldText = mode === "edit" ? ORDERS.find(x => x.no === selOrderNo).items.filter(i => !i.returned)[idx].specText
+    : mode === "editNew" ? newDishes[idx].specText : "";
+  const addonSuffix = oldText.includes("·") ? " · " + oldText.split("·").slice(1).join("·").trim() : "";
+  const text = dish.specs.map((g, gi) => g.options[sel[gi]].n).join("/") + addonSuffix;
+  const diff = dish.specs.reduce((s, g, gi) => s + g.options[sel[gi]].d, 0);
+  const price = dish.price + diff;
+  if (mode === "add") {
+    newDishes.push({ dishId: dish.id, name: dish.name, specText: text, price, qty: 1, returned: false });
+    renderNewDishes();
+  } else if (mode === "editNew") {
+    newDishes[idx].specText = text; newDishes[idx].price = price;
+    renderNewDishes();
+  } else {
+    const o = ORDERS.find(x => x.no === selOrderNo);
+    const it = o.items.filter(i => !i.returned)[idx];
+    it.specText = text; it.price = price;
+    openModify();
+    toast("规格已调整，保存改单后同步重打后厨小票");
+  }
+  closeModal();
+}
+function addDishToOrder() {
+  const d = DISHES.find(x => x.id === $("addDishSel").value);
+  if (!d) return;
+  if (openSpecPick("add", -1, d.id)) return;
+  newDishes.push({ dishId: d.id, name: d.name, specText: "默认", price: d.price, qty: 1, returned: false });
+  renderNewDishes();
+}
+function renderNewDishes() {
+  $("newDishList").innerHTML = newDishes.map((i, idx) => `
+    <div class="oi-row">
+      <div class="oi-name">${i.name}<span class="spec num">${i.specText}</span></div>
+      <button class="btn sm" onclick="editNewSpec(${idx})">改规格</button>
+      <div class="stepper" style="margin-left:0">
+        <button onclick="newQty(${idx},-1)">−</button><div class="stv num" id="nq${idx}">${i.qty}</div><button onclick="newQty(${idx},1)">＋</button>
+      </div>
+      <button class="btn sm danger" onclick="newDishes.splice(${idx},1);renderNewDishes()">移除</button>
+    </div>`).join("") || `<div class="form-hint">尚未添加新菜品。</div>`;
+}
+function newQty(idx, n) {
+  newDishes[idx].qty = Math.max(1, newDishes[idx].qty + n);
+  $("nq" + idx).textContent = newDishes[idx].qty;
+}
+function editNewSpec(idx) {
+  const d = DISHES.find(x => x.id === newDishes[idx].dishId);
+  if (d && openSpecPick("editNew", idx, d.id, newDishes[idx].specText)) return;
+  askInput("规格描述 · " + newDishes[idx].name, "规格描述", newDishes[idx].specText, v => {
+    newDishes[idx].specText = v;
+    renderNewDishes();
+  }, "确定");
+}
+function saveModify() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  o.note = $("modifyNote").value.trim();
+  o.items = o.items.filter(i => !i.returned).concat(newDishes);
+  addLog(o.no, "后厨打印机", "后厨小票", "成功", "改单重打");
+  opLog("ORDER_MODIFY", o.no, `新增菜品 ${newDishes.length} 个${o.note ? " · 更新备注" : ""}，后厨小票重打`);
+  closeModal(); renderCashierOrder(); renderTables();
+  toast("改单已保存，后厨小票已重打");
+}
+
+/* 挂单 / 恢复 / 取消 */
+function holdOrder() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  o.status = "hold";
+  opLog("ORDER_HUNG", o.no, `${o.tableId} 桌订单挂单暂存`);
+  renderCashierOrder(); renderTables();
+  toast("订单已挂单，可随时恢复结算");
+}
+function resumeOrder() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  o.status = "pending";
+  opLog("ORDER_RESUME", o.no, `${o.tableId} 桌订单恢复待结算`);
+  renderCashierOrder(); renderTables();
+  toast(`订单已恢复为待结算（${o.tableId} 桌）`);
+}
+function cancelOrder() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  $("cancelText").innerHTML = `确认取消 <b>${o.tableId}</b> 桌订单 <b class="num">${o.no}</b>？<br>共 ${orderQty(o)} 件菜品，合计 <b class="num">¥${fmt(orderTotal(o))}</b>。`;
+  openModal("cancelModal");
+}
+function doCancel() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  o.status = "cancel";
+  opLog("ORDER_CANCEL", o.no, `${o.tableId} 桌 · ${orderQty(o)} 件 · ¥${fmt(orderTotal(o))}，订单作废`);
+  closeModal();
+  selOrderNo = null; selTableId = null;
+  renderTables(); renderCashierOrder();
+  toast("订单已取消，桌台回到空闲");
+}
+
+/* 结算 */
+function confirmSettleModal() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  if (!o) return;
+  $("cfNo").textContent = o.no;
+  $("cfTable").textContent = o.tableId + " 桌";
+  $("cfMethod").textContent = payMethod;
+  $("cfAmount").textContent = "¥" + $("payable").textContent;
+  openModal("settleModal");
+}
+function doSettle() {
+  const o = ORDERS.find(x => x.no === selOrderNo);
+  o.status = "paid";
+  o.payMethod = payMethod;
+  o.settleAmount = parseFloat($("payable").textContent);
+  addLog(o.no, "前台打印机", "顾客结账单", "成功", "");
+  opLog("ORDER_SETTLE", o.no, `${o.tableId} 桌 · ${payMethod} · 实收 ¥${fmt2(o.settleAmount)}`);
+  closeModal();
+  showReceipt(o);
+  selOrderNo = null; selTableId = null;
+  renderTables(); renderCashierOrder(); refreshToday();
+}
+function addLog(orderNo, printer, type, status, reason) {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  PRINT_LOG.unshift({ id: "L" + Date.now(), time: `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`, orderNo, printer, type, status, reason });
+}
+
+/* 小票 */
+function receiptText(o) {
+  const lines = [];
+  lines.push(SETTINGS.receiptTitle);
+  lines.push("＝＝＝＝ 结账单 ＝＝＝＝");
+  lines.push(`桌号：${o.tableId}    人数：${o.people}`);
+  lines.push(`单号：${o.no}`);
+  lines.push(`时间：${o.time}`);
+  lines.push("--------------------------------");
+  o.items.forEach(i => {
+    lines.push(`${(i.returned ? "[退]" : "") + i.name}  x${i.qty}`);
+    lines.push(`   ${i.specText}   ¥${fmt2(i.price * i.qty)}`);
+  });
+  lines.push("--------------------------------");
+  lines.push(`合计：¥${fmt2(orderTotal(o))}`);
+  const off = o.settleAmount ? orderTotal(o) - o.settleAmount : 0;
+  if (off) lines.push(`抹零：-¥${fmt2(off)}`);
+  lines.push(`应收：¥${fmt2(o.settleAmount ?? orderTotal(o))}`);
+  lines.push(`结算：${o.payMethod || "—"}`);
+  if (SETTINGS.phone) lines.push(`门店电话：${SETTINGS.phone}`);
+  lines.push("");
+  lines.push("谢谢惠临，欢迎再次光临");
+  return lines.join("\n");
+}
+function showReceipt(o) {
+  $("printTitle").textContent = "打印预览 · 顾客结账单";
+  $("receiptBox").textContent = receiptText(o);
+  openModal("printModal");
+}
+
+/* ================= 通用分页 ================= */
+const PAGE_STATE = {};        // key -> 当前页
+const PAGE_SIG = {};          // key -> 筛选签名（变化时回第一页）
+// 取当前页切片；sig 为筛选条件签名，变化时自动回到第 1 页
+function paginate(key, list, size, sig) {
+  if (sig !== undefined && PAGE_SIG[key] !== sig) { PAGE_SIG[key] = sig; PAGE_STATE[key] = 1; }
+  const total = list.length;
+  const pages = Math.max(1, Math.ceil(total / size));
+  const cur = Math.min(Math.max(1, PAGE_STATE[key] || 1), pages);
+  PAGE_STATE[key] = cur;
+  return { slice: list.slice((cur - 1) * size, cur * size), cur, pages, total };
+}
+function goPage(key, p) {
+  PAGE_STATE[key] = Math.max(1, p);
+  ({ dishes: renderDishRows, flow: renderOrderFlow, log: renderPrintLog })[key]?.();
+}
+// 页码窗口：最多显示 5 个页码，超出用省略号
+function pageWindow(cur, pages) {
+  const start = Math.max(1, Math.min(cur - 2, pages - 4));
+  const end = Math.min(pages, start + 4);
+  const arr = [];
+  if (start > 1) arr.push(1, start > 2 ? "…" : null);
+  for (let i = start; i <= end; i++) arr.push(i);
+  if (end < pages) arr.push(end < pages - 1 ? "…" : null, pages);
+  return arr.filter(x => x !== null);
+}
+function pagerHtml(key, { cur, pages, total }) {
+  if (!total) return "";
+  return `<div class="pager">
+    <span class="pg-info">共 <b class="num">${total}</b> 条 · 第 <b class="num">${cur}</b>/${pages} 页</span>
+    <div class="pg-btns">
+      <button class="pg-btn" ${cur === 1 ? "disabled" : ""} onclick="goPage('${key}',${cur - 1})">‹</button>
+      ${pageWindow(cur, pages).map(p => typeof p === "number"
+        ? `<button class="pg-btn num ${p === cur ? "active" : ""}" onclick="goPage('${key}',${p})">${p}</button>`
+        : `<span class="pg-dots">…</span>`).join("")}
+      <button class="pg-btn" ${cur === pages ? "disabled" : ""} onclick="goPage('${key}',${cur + 1})">›</button>
+    </div>
+  </div>`;
+}
+
+/* ================= 菜品管理 ================= */
+function renderCatList() {
+  $("catList").innerHTML = `<div class="cat-item ${curCat === "" ? "active" : ""}" onclick="pickCat('')"><span>全部菜品</span><span class="cnt">${DISHES.length}</span></div>` +
+    CATS.map((c, i) => `<div class="cat-item ${curCat === c ? "active" : ""}" onclick="pickCat('${c}')">
+      <span>${c}</span>
+      <span style="display:flex;align-items:center;gap:2px">
+        <span class="cops" onclick="event.stopPropagation()">
+          <button class="cbtn" title="上移" onclick="moveCat('${c}',-1)" ${i === 0 ? "disabled" : ""}>↑</button>
+          <button class="cbtn" title="下移" onclick="moveCat('${c}',1)" ${i === CATS.length - 1 ? "disabled" : ""}>↓</button>
+          <button class="cbtn" title="重命名" onclick="renameCategory('${c}')">✎</button>
+          <button class="cbtn" title="删除" onclick="delCategory('${c}')">✕</button>
+        </span>
+        <span class="cnt">${DISHES.filter(d => d.cat === c).length}</span>
+      </span>
+    </div>`).join("");
+  $("catFoot").innerHTML = `共 <b>${CATS.length}</b> 个分类 · <b>${DISHES.length}</b> 道菜品`;
+}
+function renameCategory(c) {
+  askInput("重命名分类", "新分类名称", c, v => {
+    if (CATS.includes(v)) { toast("分类已存在"); return; }
+    const old = c;
+    CATS[CATS.indexOf(c)] = v;
+    DISHES.forEach(d => { if (d.cat === old) d.cat = v; });
+    if (curCat === old) curCat = v;
+    renderCatList(); renderDishRows();
+    toast("分类已重命名，顾客端同步生效");
+  }, "保存");
+}
+function delCategory(c) {
+  const n = DISHES.filter(d => d.cat === c).length;
+  askConfirm("删除分类", `确定删除分类「<b>${c}</b>」吗？${n ? `该分类下还有 <b class="num">${n}</b> 个菜品，需先移走或删除。` : "分类下暂无菜品。"}`, () => {
+    if (n) { toast("请先移走或删除该分类下的菜品"); return; }
+    CATS.splice(CATS.indexOf(c), 1);
+    if (curCat === c) curCat = "";
+    renderCatList(); renderDishRows();
+    toast("分类已删除");
+  }, "确认删除");
+}
+function moveCat(c, dir) {
+  const i = CATS.indexOf(c), j = i + dir;
+  if (j < 0 || j >= CATS.length) return;
+  [CATS[i], CATS[j]] = [CATS[j], CATS[i]];
+  renderCatList();
+  toast("分类顺序已更新，顾客端同步生效");
+}
+function pickCat(c) { curCat = c; $("dishSearch").value = ""; renderCatList(); renderDishRows(); }
+function renderDishRows() {
+  const kw = $("dishSearch").value.trim().toLowerCase();
+  const searching = !!kw;
+  const list = searching
+    ? DISHES.filter(d => d.name.toLowerCase().includes(kw) || d.cat.toLowerCase().includes(kw))
+    : DISHES.filter(d => !curCat || d.cat === curCat);
+  $("dishListTitle").textContent = searching
+    ? `搜索“${$("dishSearch").value.trim()}”（${list.length}）`
+    : (curCat || "全部菜品") + `（${DISHES.filter(d => !curCat || d.cat === curCat).length}）`;
+  const pg = paginate("dishes", list, 8, [curCat, kw].join("|"));
+  const statusTag = d => d.off ? '<span class="tag off">已下架</span>' : d.soldOut ? '<span class="tag pending">已售罄</span>' : '<span class="tag ok">在售</span>';
+  $("dishRows").innerHTML = pg.slice.length ? pg.slice.map(d => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><span class="dthumb">${d.name[0]}</span><b>${d.name}</b></div></td>
+      <td>${d.cat}</td>
+      <td class="num" style="color:var(--price);font-weight:700">¥${fmt(d.price)}</td>
+      <td style="font-size:11px;color:var(--ink-2)">${d.specs.length ? d.specs.map(g => g.name).join("、") : "—"}${d.addons.length ? " · 加料×" + d.addons.length : ""}</td>
+      <td class="num">${d.sort}</td>
+      <td>${statusTag(d)}</td>
+      <td>
+        <button class="btn sm" onclick="toggleOn('${d.id}')">${d.off ? "上架" : "下架"}</button>
+        <button class="btn sm" onclick="toggleSold('${d.id}')" ${d.off ? "disabled" : ""}>${d.soldOut ? "恢复在售" : "置售罄"}</button>
+        <button class="btn sm" onclick="openDishEdit('${d.id}')">编辑</button>
+        <button class="btn sm danger" onclick="delDish('${d.id}')">删除</button>
+      </td>
+    </tr>`).join("") : `<tr><td colspan="7"><div class="empty">${searching ? "无匹配菜品，试试其他关键词" : "该分类暂无菜品"}</div></td></tr>`;
+  $("dishPager").innerHTML = pagerHtml("dishes", pg);
+}
+function toggleOn(id) {
+  const d = DISHES.find(x => x.id === id);
+  d.off = !d.off;
+  renderDishRows();
+  toast(d.off ? `「${d.name}」已下架，顾客端不可见` : `「${d.name}」已上架，顾客端恢复展示`);
+}
+function toggleSold(id) {
+  const d = DISHES.find(x => x.id === id);
+  d.soldOut = !d.soldOut;
+  renderDishRows();
+  toast(d.soldOut ? `「${d.name}」已置为售罄，顾客端立即置灰` : `「${d.name}」恢复在售`);
+}
+function delDish(id) {
+  const d = DISHES.find(x => x.id === id);
+  askConfirm("删除菜品", `确定删除菜品「<b>${d.name}</b>」吗？删除后顾客端立即下架，历史订单不受影响。`, () => {
+    DISHES.splice(DISHES.indexOf(d), 1);
+    opLog("DISH_DEL", d.name, `删除菜品（¥${fmt(d.price)} · ${d.cat}）`);
+    renderDishRows(); renderCatList();
+    toast("菜品已删除");
+  }, "确认删除");
+}
+function addCategory() {
+  askInput("新增菜品分类", "分类名称（如：时令推荐）", "", name => {
+    if (CATS.includes(name)) { toast("分类已存在"); return; }
+    CATS.push(name); curCat = name;
+    renderCatList(); renderDishRows();
+    toast("分类已新增，顾客端同步生效");
+  }, "新增");
+}
+/* 规格组结构化编辑（与顾客端数据结构一致：[{name, options:[{n,d}]}]，d 为差价，正数加价 / 负数减价） */
+let specGroups = [];
+function renderSpecGroups() {
+  $("specGroups").innerHTML = specGroups.map((g, gi) => `
+    <div class="spec-group">
+      <div class="sg-head">
+        <input placeholder="组名（如：份量）" value="${g.name}" oninput="specGroups[${gi}].name=this.value">
+        <button class="btn sm danger" onclick="specGroups.splice(${gi},1);renderSpecGroups()">删除组</button>
+      </div>
+      <div style="font-size:10px;color:var(--ink-3);margin-bottom:6px">选项名 &nbsp;&nbsp;|&nbsp;&nbsp; 差价（元，可为负，0 表示不变价）</div>
+      ${g.options.map((o, oi) => `
+        <div class="sg-opt">
+          <input class="n" placeholder="选项名（如：大份）" value="${o.n}" oninput="specGroups[${gi}].options[${oi}].n=this.value">
+          <input class="p" type="number" step="0.5" value="${o.d}" oninput="specGroups[${gi}].options[${oi}].d=parseFloat(this.value)||0;updateSpecPrices()">
+          <span class="sg-price" id="sgp${gi}_${oi}"></span>
+          <button class="btn sm danger" onclick="specGroups[${gi}].options.splice(${oi},1);renderSpecGroups()">删</button>
+        </div>`).join("") || `<div class="form-hint" style="margin:0 0 6px">请至少添加一个选项。</div>`}
+      <button class="btn sm" style="margin-top:2px" onclick="specGroups[${gi}].options.push({n:'',d:0});renderSpecGroups()">＋ 添加选项</button>
+    </div>`).join("") || `<div class="form-hint" style="margin-bottom:4px">尚未配置规格组，顾客点该菜时无需选规格。不同规格可设差价（如「大份 +3 元」），保存后顾客端下单按所选规格计价。</div>`;
+  updateSpecPrices();
+}
+function updateSpecPrices() {
+  const base = parseFloat($("dishPrice").value) || 0;
+  specGroups.forEach((g, gi) => g.options.forEach((o, oi) => {
+    const el = $("sgp" + gi + "_" + oi);
+    if (el) el.innerHTML = o.d ? `到手 <b class="num">¥${fmt(base + o.d)}</b>` : `<b class="num">¥${fmt(base)}</b>`;
+  }));
+}
+function addSpecGroup() { specGroups.push({ name: "", options: [{ n: "", d: 0 }] }); renderSpecGroups(); }
+function cleanSpecs() {
+  return specGroups.filter(g => g.name.trim()).map(g => ({
+    name: g.name.trim(),
+    options: g.options.filter(o => o.n.trim()).map(o => ({ n: o.n.trim(), d: o.d || 0 }))
+  }));
+}
+
+function openDishEdit(id) {
+  editingDishId = id || null;
+  _dishImg = id ? (DISHES.find(x => x.id === id).img || "") : "";
+  $("dishImgPrev").style.opacity = _dishImg ? 1 : .5;
+  $("dishImgName").textContent = _dishImg || "未上传（内网本地存储）";
+  $("dishModalTitle").textContent = id ? "编辑菜品" : "新增菜品";
+  $("dishCat").innerHTML = CATS.map(c => `<option>${c}</option>`).join("");
+  $("dishAddonChips").innerHTML = ADDONS.map(a =>
+    `<span class="opt" data-on="0" onclick="this.classList.toggle('active');this.dataset.on=this.dataset.on==='0'?'1':'0'">${a.name} +¥${a.price}</span>`).join("");
+  specGroups = id ? JSON.parse(JSON.stringify(DISHES.find(x => x.id === id).specs || [])) : [];
+  if (id) {
+    const d = DISHES.find(x => x.id === id);
+    $("dishName").value = d.name; $("dishCat").value = d.cat;
+    $("dishPrice").value = d.price; $("dishSort").value = d.sort;
+    $("dishOn").checked = !d.off; $("dishSoldOut").checked = d.soldOut;
+    // 回填已绑定加料
+    [...$("dishAddonChips").children].forEach((el, i) => {
+      if (d.addons.includes(ADDONS[i].name)) { el.classList.add("active"); el.dataset.on = "1"; }
+    });
+  } else {
+    $("dishName").value = ""; $("dishPrice").value = ""; $("dishSort").value = 0;
+    $("dishOn").checked = true; $("dishSoldOut").checked = false;
+  }
+  renderSpecGroups();
+  openModal("dishModal");
+  setTimeout(() => $("dishName").focus(), 60);
+}
+let _dishImg = "";
+function pickDishImg(inp) {
+  const f = inp.files && inp.files[0];
+  if (!f) return;
+  _dishImg = f.name;
+  $("dishImgPrev").style.opacity = 1;
+  $("dishImgName").textContent = f.name;
+  toast("图片已上传至内网存储（模拟）");
+}
+function saveDish() {
+  const name = $("dishName").value.trim();
+  if (!name) { toast("请输入菜品名称"); return; }
+  const price = parseFloat($("dishPrice").value);
+  if (!price || price <= 0) { toast("请输入正确的售价（大于 0）"); return; }
+  const noOptGroup = specGroups.find(g => !g.name.trim() && g.options.some(o => o.n.trim()));
+  if (noOptGroup) { toast("请填写规格组名称（如：份量）"); return; }
+  const badOptGroup = specGroups.find(g => g.name.trim() && g.options.some(o => !o.n.trim()));
+  if (badOptGroup) { toast(`规格组「${badOptGroup.name.trim()}」存在未命名的选项，请补全`); return; }
+  const noOpt = specGroups.find(g => g.name.trim() && !g.options.some(o => o.n.trim()));
+  if (noOpt) { toast(`规格组「${noOpt.name.trim()}」请至少添加一个选项`); return; }
+  const addons = ADDONS.filter((a, i) => $("dishAddonChips").children[i]?.classList.contains("active")).map(a => a.name);
+  const common = { name, cat: $("dishCat").value, price, sort: +$("dishSort").value || 0, specs: cleanSpecs(), addons, off: !$("dishOn").checked, soldOut: $("dishSoldOut").checked, img: _dishImg };
+  if (editingDishId) {
+    Object.assign(DISHES.find(x => x.id === editingDishId), common);
+    opLog("DISH_SAVE", name, `编辑菜品 · ¥${fmt(price)} · 分类 ${common.cat}`);
+    toast("菜品已保存");
+  } else {
+    DISHES.push({ id: "d" + Date.now(), ...common });
+    opLog("DISH_SAVE", name, `新增菜品 · ¥${fmt(price)} · 分类 ${common.cat}`);
+    toast(common.off ? "菜品已保存（当前为下架状态）" : "菜品已新增并上架");
+  }
+  closeModal(); renderDishRows(); renderCatList();
+}
+
+/* ================= 加料管理 ================= */
+function renderAddons() {
+  $("addonCount").textContent = ADDONS.length ? `(${ADDONS.length})` : "";
+  $("addonRows").innerHTML = ADDONS.length ? ADDONS.map(a => `
+    <tr>
+      <td><b>${a.name}</b>${a.limit ? `<span class="tag off" style="margin-left:6px">限${a.limit}份</span>` : ""}</td>
+      <td class="num" style="color:var(--price);font-weight:700">+¥${fmt(a.price)}</td>
+      <td class="num" style="color:var(--ink-2)">${a.bind.length} 个菜品</td>
+      <td>
+        <button class="btn sm" onclick="editAddon('${a.id}')">编辑</button>
+        <button class="btn sm danger" onclick="delAddon('${a.id}')">删除</button>
+      </td>
+    </tr>`).join("") : `<tr><td colspan="4"><div class="empty">暂无加料项，点击右下角「新增加料」创建</div></td></tr>`;
+}
+function openAddonModal() { openModal("addonModal"); }
+let editingAddonId = null;
+function addAddon() {
+  editingAddonId = null;
+  $("addonFormTitle").textContent = "新增加料";
+  $("adName").value = ""; $("adPrice").value = ""; $("adLimit").value = "0";
+  $("adErr").style.display = "none";
+  openModal("addonFormModal");
+  setTimeout(() => $("adName").focus(), 120);
+}
+function editAddon(id) {
+  const a = ADDONS.find(x => x.id === id);
+  editingAddonId = id;
+  $("addonFormTitle").textContent = "编辑加料";
+  $("adName").value = a.name; $("adPrice").value = a.price;
+  $("adLimit").value = String(a.limit || 0);
+  $("adErr").style.display = "none";
+  openModal("addonFormModal");
+  setTimeout(() => $("adName").focus(), 120);
+}
+function cancelAddonForm() {
+  // 从表单返回加料列表弹窗
+  openModal("addonModal");
+}
+function saveAddonForm() {
+  const err = $("adErr");
+  const show = t => { err.textContent = t; err.style.display = "block"; };
+  const name = $("adName").value.trim();
+  if (!name) { show("请输入加料名称"); return; }
+  if (name.length > 8) { show("加料名称建议不超过 8 个字（如：煎蛋、芝士）"); return; }
+  const price = parseFloat($("adPrice").value);
+  if (isNaN(price) || price < 0) { show("加价金额需为不小于 0 的数字"); return; }
+  const dup = ADDONS.find(a => a.name === name && a.id !== editingAddonId);
+  if (dup) { show(`加料「${name}」已存在`); return; }
+  const limit = +$("adLimit").value || 0;
+  if (editingAddonId) {
+    const a = ADDONS.find(x => x.id === editingAddonId);
+    const oldName = a.name;
+    Object.assign(a, { name, price, limit });
+    if (name !== oldName) DISHES.forEach(d => { d.addons = d.addons.map(n => n === oldName ? name : n); });
+    toast("加料已更新，已绑定菜品同步生效");
+  } else {
+    ADDONS.push({ id: "a" + Date.now(), name, price, limit, bind: [] });
+    toast("加料已新增，可在菜品编辑中绑定");
+  }
+  renderAddons(); renderDishRows();
+  openModal("addonModal"); // 返回加料列表
+}
+function delAddon(id) {
+  const a = ADDONS.find(x => x.id === id);
+  askConfirm("删除加料", `确定删除加料「<b>${a.name}</b>」吗？已绑定该加料的菜品将同步解绑。`, () => {
+    ADDONS.splice(ADDONS.indexOf(a), 1);
+    DISHES.forEach(d => { d.addons = d.addons.filter(n => n !== a.name); });
+    renderAddons(); renderDishRows();
+    toast("加料已删除");
+  }, "确认删除");
+}
+
+/* ================= 桌台管理 ================= */
+let curArea = "";
+function renderAreaList() {
+  $("areaList").innerHTML = `<div class="cat-item ${curArea === "" ? "active" : ""}" onclick="pickArea('')"><span>全部桌台</span><span class="cnt">${TABLES.length}</span></div>` +
+    AREAS.map((a, i) => `<div class="cat-item ${curArea === a ? "active" : ""}" onclick="pickArea('${a}')">
+      <span>${a}</span>
+      <span style="display:flex;align-items:center;gap:2px">
+        <span class="cops" onclick="event.stopPropagation()">
+          <button class="cbtn" title="上移" onclick="moveArea('${a}',-1)" ${i === 0 ? "disabled" : ""}>↑</button>
+          <button class="cbtn" title="下移" onclick="moveArea('${a}',1)" ${i === AREAS.length - 1 ? "disabled" : ""}>↓</button>
+          <button class="cbtn" title="重命名" onclick="renameArea('${a}')">✎</button>
+          <button class="cbtn" title="删除" onclick="delArea('${a}')">✕</button>
+        </span>
+        <span class="cnt">${TABLES.filter(t => areaOf(t) === a).length}</span>
+      </span>
+    </div>`).join("");
+  $("areaFoot").innerHTML = `共 <b>${AREAS.length}</b> 个区域 · <b>${TABLES.length}</b> 张桌台`;
+}
+function pickArea(a) { curArea = a; renderAreaList(); renderTableRows(); }
+function addArea() {
+  askInput("新增区域", "区域名称（如：D区 / 二楼卡座）", "", name => {
+    if (AREAS.includes(name)) { toast("区域已存在"); return; }
+    AREAS.push(name);
+    curArea = name;
+    renderAreaList(); renderTableRows();
+    toast(`区域「${name}」已新增，新增桌台时可直接划入`);
+  }, "新增");
+}
+function renameArea(a) {
+  askInput("重命名区域", "新名称", a, name => {
+    if (!name || name === a) return;
+    if (AREAS.includes(name)) { toast("区域已存在"); return; }
+    AREAS[AREAS.indexOf(a)] = name;
+    TABLES.forEach(t => { if (t.area === a) t.area = name; });
+    if (curArea === a) curArea = name;
+    renderAreaList(); renderTableRows(); renderTables();
+    toast(`区域已重命名为「${name}」，桌台归属同步更新`);
+  }, "保存");
+}
+function delArea(a) {
+  const n = TABLES.filter(t => areaOf(t) === a).length;
+  if (n) { toast(`「${a}」下还有 ${n} 张桌台，请先移走或删除`); return; }
+  askConfirm("删除区域", `确定删除空区域「<b>${a}</b>」吗？`, () => {
+    AREAS.splice(AREAS.indexOf(a), 1);
+    if (curArea === a) curArea = "";
+    renderAreaList(); renderTableRows(); renderTables();
+    toast("区域已删除");
+  }, "确认删除");
+}
+function moveArea(a, dir) {
+  const i = AREAS.indexOf(a), j = i + dir;
+  if (j < 0 || j >= AREAS.length) return;
+  [AREAS[i], AREAS[j]] = [AREAS[j], AREAS[i]];
+  renderAreaList(); renderTables();
+  toast("区域顺序已更新，收银台分组同步生效");
+}
+function renderTableRows() {
+  $("tableListTitle").textContent = (curArea || "全部桌台") + `（${TABLES.filter(t => !curArea || areaOf(t) === curArea).length}）`;
+  const list = TABLES.filter(t => !curArea || areaOf(t) === curArea);
+  $("tableRows").innerHTML = list.length ? list.map(t => {
+    const orders = ORDERS.filter(o => o.tableId === t.id && (o.status === "pending" || o.status === "hold"));
+    const amt = orders.reduce((s, o) => s + orderTotal(o), 0);
+    return `<tr>
+      <td><b class="num">${t.id}</b></td>
+      <td>${areaOf(t)}</td>
+      <td>${orders.length ? '<span class="tag pending">待结算</span>' : '<span class="tag ok">空闲</span>'}</td>
+      <td class="num">${orders.length || "—"}</td>
+      <td class="num">${orders.length ? "¥" + fmt(amt) : "—"}</td>
+      <td><span class="tag off">已生成</span></td>
+      <td>
+        <button class="btn sm" onclick="editTable('${t.id}')">编辑</button>
+        <button class="btn sm" onclick="showQrOne('${t.id}')">二维码</button>
+        <button class="btn sm danger" onclick="delTable('${t.id}')">删除</button>
+      </td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="7"><div class="empty">该区域暂无桌台，点击右上角「新增桌台」划入</div></td></tr>`;
+}
+/* 桌台新增/编辑：正式表单弹窗（桌号 + 区域） */
+let editingTableId = null;
+function addTable() {
+  editingTableId = null;
+  $("tableFormTitle").textContent = "新增桌台";
+  $("tnoArea").innerHTML = AREAS.map(a => `<option ${a === (curArea || AREAS[0]) ? "selected" : ""}>${a}</option>`).join("");
+  $("tnoInput").value = "";
+  $("tnoErr").style.display = "none";
+  openModal("tableFormModal");
+  setTimeout(() => $("tnoInput").focus(), 120);
+}
+function editTable(id) {
+  editingTableId = id;
+  $("tableFormTitle").textContent = "编辑桌台";
+  $("tnoArea").innerHTML = AREAS.map(a => `<option ${a === areaOf(TABLES.find(t => t.id === id)) ? "selected" : ""}>${a}</option>`).join("");
+  $("tnoInput").value = id;
+  $("tnoErr").style.display = "none";
+  openModal("tableFormModal");
+  setTimeout(() => $("tnoInput").focus(), 120);
+}
+function cancelTableForm() { closeModal(); }
+function saveTableForm() {
+  const err = $("tnoErr");
+  const show = t => { err.textContent = t; err.style.display = "block"; };
+  const id = $("tnoInput").value.trim();
+  if (!id) { show("请输入桌号"); return; }
+  if (TABLES.find(t => t.id === id && t.id !== editingTableId)) { show(`桌号「${id}」已存在`); return; }
+  const area = $("tnoArea").value;
+  if (editingTableId) {
+    const t = TABLES.find(t => t.id === editingTableId);
+    const old = t.id;
+    t.id = id; t.area = area;
+    ORDERS.forEach(o => { if (o.tableId === old) o.tableId = id; });
+    if (selTableId === old) selTableId = id;
+    toast(`桌台已更新为「${id}」（${area}），二维码链接已同步`);
+  } else {
+    TABLES.push({ id, area });
+    toast(`桌台「${id}」已划入「${area}」，二维码可在批量生成中下载`);
+  }
+  renderTableRows(); renderAreaList(); renderTables();
+  closeModal();
+}
+function delTable(id) {
+  askConfirm("删除桌台", `确定删除桌台「<b class="num">${id}</b>」吗？相关二维码将同步失效。`, () => {
+    TABLES = TABLES.filter(t => t.id !== id);
+    renderTableRows(); renderAreaList(); renderTables();
+    toast("桌台已删除");
+  }, "确认删除");
+}
+// 伪二维码：由桌号散列生成确定性图案（原型示意，同桌号恒定同图案）
+function genQrCells(id) {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  let cells = "";
+  for (let i = 0; i < 64; i++) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    cells += `<i class="${(h >> 7) % 100 < 52 ? "" : "w"}"></i>`;
+  }
+  return cells;
+}
+function tableQrLink(id) {
+  return `https://dinebox.cn/order?t=${encodeURIComponent(id)}&shop=${encodeURIComponent(SETTINGS.shopName)}`;
+}
+function renderQrGrid() {
+  $("qrGrid").innerHTML = TABLES.map(t => `
+    <div class="qr-card">
+      <div class="qr-box">${genQrCells(t.id)}</div>
+      <div style="font-size:13px;font-weight:700" class="num">${t.id}</div>
+      <div style="font-size:10px;color:var(--ink-3);margin-top:2px">${areaOf(t)}</div>
+      <button class="btn sm" style="margin-top:8px" onclick="showQrOne('${t.id}')">查看</button>
+    </div>`).join("");
+}
+/* 单桌二维码弹窗（行内"二维码"按钮入口） */
+function showQrOne(id) {
+  const t = TABLES.find(x => x.id === id);
+  if (!t) return;
+  $("qrOneTitle").textContent = `${id} · 点桌二维码`;
+  $("qrOneMeta").innerHTML = `所属区域 <b>${areaOf(t)}</b> · 桌号 <b class="num">${id}</b>`;
+  $("qrOneBox").innerHTML = genQrCells(id);
+  $("qrOneLink").textContent = tableQrLink(id);
+  openModal("qrOneModal");
+}
+function copyQrLink() {
+  const link = $("qrOneLink").textContent;
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).catch(() => {});
+  toast("点桌链接已复制（示意）");
+}
+
+/* ================= 打印配置 ================= */
+function showPrintTab(tab) {
+  const keys = ["printers", "templates", "logs"];
+  [...$("printTabs").children].forEach((b, i) => b.classList.toggle("active", keys[i] === tab));
+  $("prTab-printers").style.display = tab === "printers" ? "" : "none";
+  $("prTab-templates").style.display = tab === "templates" ? "" : "none";
+  $("prTab-logs").style.display = tab === "logs" ? "" : "none";
+  if (tab === "logs") renderPrintLog();
+}
+function renderPrinters() {
+  $("printerCnt").textContent = PRINTERS.length;
+  $("printerRows").innerHTML = PRINTERS.map(p => `
+    <tr>
+      <td><b title="${p.note || ""}">${p.name}${p.note ? ' <span style="color:var(--ink-3);font-weight:400;font-size:11px">备注</span>' : ""}</b></td>
+      <td class="num">${p.ip}</td>
+      <td class="num">${p.port}</td>
+      <td>${p.use}</td>
+      <td>${p.online ? '<span class="tag ok">在线</span>' : '<span class="tag off">离线</span>'}</td>
+      <td>
+        <button class="btn sm" onclick="testPrint('${p.id}')">测试</button>
+        <button class="btn sm" onclick="editPrinter('${p.id}')">编辑</button>
+        <button class="btn sm danger" onclick="delPrinter('${p.id}')">删除</button>
+      </td>
+    </tr>`).join("");
+}
+function addPrinter() { openPrinterForm(null); }
+function editPrinter(id) { openPrinterForm(id); }
+let editingPrinterId = null;
+function openPrinterForm(id) {
+  editingPrinterId = id || null;
+  $("printerFormTitle").textContent = id ? "编辑打印机" : "添加打印机";
+  const p = id ? PRINTERS.find(x => x.id === id) : null;
+  $("prName").value = p ? p.name : "";
+  $("prIp").value = p ? p.ip : "";
+  $("prPort").value = p ? p.port : 9100;
+  $("prUse").value = p ? p.use : "后厨小票";
+  $("prNote").value = p ? (p.note || "") : "";
+  openModal("printerModal");
+  setTimeout(() => $("prName").focus(), 60);
+}
+function savePrinterForm() {
+  const name = $("prName").value.trim();
+  const ip = $("prIp").value.trim();
+  if (!name) { toast("请输入打印机名称"); return; }
+  if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) { toast("IP 格式不正确，示例：192.168.1.54"); return; }
+  const port = parseInt($("prPort").value) || 9100;
+  const data = { name, ip, port, use: $("prUse").value, note: $("prNote").value.trim() };
+  if (editingPrinterId) {
+    Object.assign(PRINTERS.find(x => x.id === editingPrinterId), data);
+    opLog("PRINTER_SAVE", name, `编辑打印机 · ${ip}:${port} · ${data.use}`);
+    toast("打印机信息已保存");
+  } else {
+    PRINTERS.push({ id: "p" + Date.now(), ...data, online: false });
+    opLog("PRINTER_SAVE", name, `新增打印机 · ${ip}:${port} · ${data.use} · 默认离线`);
+    toast("打印机已保存，点击【测试】验证连通性");
+  }
+  closeModal(); renderPrinters();
+}
+function delPrinter(id) {
+  const p = PRINTERS.find(x => x.id === id);
+  askConfirm("删除打印机", `确定删除「<b>${p.name}</b>」（${p.ip}:${p.port}）吗？删除后相关单据将无法打印。`, () => {
+    PRINTERS = PRINTERS.filter(x => x.id !== id);
+    opLog("PRINTER_SAVE", p.name, `删除打印机（${p.ip}:${p.port}）`);
+    renderPrinters();
+    toast("打印机已删除");
+  }, "确认删除");
+}
+function testPrint(id) {
+  const p = PRINTERS.find(x => x.id === id);
+  const ok = p.online;
+  addLog("TEST-" + Date.now() % 1000, p.name, "测试页", ok ? "成功" : "失败", ok ? "" : "连接超时");
+  opLog("PRINTER_TEST", p.name, `${p.ip}:${p.port} · ${ok ? "连通正常" : "连接超时，请检查网络/静态IP绑定"}`);
+  renderPrintLog();
+  toast(ok ? `测试指令已发送至 ${p.ip}:${p.port}，打印正常` : `连接 ${p.ip}:${p.port} 失败：超时，请检查网络/静态IP绑定`);
+}
+function initLogFilter() {
+  $("logPrinter").innerHTML = `<option value="">全部打印机</option>` + PRINTERS.map(p => `<option>${p.name}</option>`).join("");
+}
+function logFilterList() {
+  const kw = $("logKw").value.trim();
+  const type = $("logType").value;
+  const printer = $("logPrinter").value;
+  const status = $("logStatus").value;
+  const list = PRINT_LOG.filter(l =>
+    (!kw || l.orderNo.includes(kw)) &&
+    (!type || l.type === type) &&
+    (!printer || l.printer === printer) &&
+    (!status || l.status === status));
+  return { kw, type, printer, status, list };
+}
+function resetLogFilters() {
+  $("logKw").value = ""; $("logType").value = ""; $("logPrinter").value = ""; $("logStatus").value = "";
+  renderPrintLog();
+  toast("打印日志筛选已重置");
+}
+function renderPrintLog() {
+  const { kw, type, printer, status, list } = logFilterList();
+  const pg = paginate("log", list, 6, [kw, type, printer, status].join("|"));
+  const failCnt = list.filter(l => l.status === "失败").length;
+  $("logSummary").innerHTML = `共 <b>${list.length}</b> 条 · 失败 <b>${failCnt}</b> 条`;
+  $("logRows").innerHTML = pg.slice.length ? pg.slice.map(l => `
+    <tr>
+      <td class="num">${l.time}</td>
+      <td class="num" style="font-size:12px">${l.orderNo}</td>
+      <td>${l.printer}</td>
+      <td>${l.type}</td>
+      <td>${l.status === "成功" ? '<span class="tag ok">成功</span>' : '<span class="tag cancel">失败</span>'}</td>
+      <td style="font-size:11px;color:var(--ink-3)" title="${l.reason}">${(l.reason || "—").slice(0, 18)}${(l.reason || "").length > 18 ? "…" : ""}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" onclick="showLogDetail('${l.id}')">详情</button>
+        ${l.status === "成功" ? `<button class="btn sm" onclick="manualReprint('${l.orderNo}','${l.type}')">重打</button>` : `<button class="btn sm" onclick="manualReprint('${l.orderNo}','${l.type}')">重试</button>`}
+        <button class="btn sm danger" onclick="delLog('${l.id}')">删除</button>
+      </td>
+    </tr>`).join("") : `<tr><td colspan="7"><div class="empty">无符合条件的打印记录</div></td></tr>`;
+  $("logPager").innerHTML = pagerHtml("log", pg);
+}
+function showLogDetail(id) {
+  const l = PRINT_LOG.find(x => x.id === id);
+  if (!l) return;
+  const row = (k, v) => `<div style="display:flex;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px">
+    <span style="width:76px;flex-shrink:0;color:var(--ink-3)">${k}</span>
+    <span style="flex:1;min-width:0;word-break:break-all" class="num">${v}</span></div>`;
+  $("logDetailBody").innerHTML =
+    row("打印时间", l.time) +
+    row("订单号", l.orderNo) +
+    row("打印机", l.printer) +
+    row("单据类型", l.type) +
+    row("打印状态", l.status === "成功" ? '<span class="tag ok">成功</span>' : '<span class="tag cancel">失败</span>') +
+    row("失败原因", l.reason ? `<span style="color:var(--price)">${l.reason}</span>` : "—") +
+    row("IP/端口", (() => { const p = PRINTERS.find(p => p.name === l.printer); return p ? `${p.ip}:${p.port}` : "—"; })());
+  $("logDetailReprintBtn").onclick = () => { closeModal(); manualReprint(l.orderNo, l.type); };
+  openModal("logDetailModal");
+}
+function delLog(id) {
+  const l = PRINT_LOG.find(x => x.id === id);
+  if (!l) return;
+  askConfirm("删除打印日志", `确定删除该条打印记录吗？<br><b class="num" style="font-size:12px">${l.time} · ${l.orderNo} · ${l.type}</b><br><span style="font-size:11px;color:var(--ink-3)">仅清理日志记录，不影响订单数据与已打印的小票。</span>`, () => {
+    PRINT_LOG = PRINT_LOG.filter(x => x.id !== id);
+    renderPrintLog();
+    toast("打印日志已删除");
+  }, "确认删除", true);
+}
+function manualReprint(orderNo, type) {
+  addLog(orderNo, type === "后厨小票" ? "后厨打印机" : "前台打印机", type, "成功", "手动重打");
+  opLog("PRINT_REPRINT", orderNo, `${type} · 手动重打`);
+  renderPrintLog();
+  toast(`已向打印机重发「${type}」指令（${orderNo}）`);
+}
+const TPL_VARS = {
+  kitchen: ["{table}", "{order_no}", "{items}", "{note}", "{time}"],
+  bill: ["{title}", "{table}", "{order_no}", "{items}", "{total}", "{off}", "{payable}", "{time}"],
+};
+let _tplDefault = {};
+function initTpl() {
+  if (!_tplDefault.kitchen) _tplDefault = { kitchen: TPL.kitchen, bill: TPL.bill };
+  $("tplKitchen").value = TPL.kitchen;
+  $("tplBill").value = TPL.bill;
+  $("varsKitchen").innerHTML = TPL_VARS.kitchen.map(v => `<span class="tpl-var" onclick="insertVar('tplKitchen','${v}')">${v}</span>`).join("");
+  $("varsBill").innerHTML = TPL_VARS.bill.map(v => `<span class="tpl-var" onclick="insertVar('tplBill','${v}')">${v}</span>`).join("");
+}
+function insertVar(taId, v) {
+  const ta = $(taId);
+  const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s;
+  ta.value = ta.value.slice(0, s) + v + ta.value.slice(e);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+}
+function resetTemplate(k) {
+  $(k === "kitchen" ? "tplKitchen" : "tplBill").value = _tplDefault[k];
+  TPL[k] = _tplDefault[k];
+  toast("已恢复默认模板，点击【保存】生效");
+}
+function saveTemplate(k) {
+  TPL[k] = $(k === "kitchen" ? "tplKitchen" : "tplBill").value;
+  opLog("TEMPLATE_SAVE", k === "kitchen" ? "后厨小票模板" : "结账单模板", "保存新模板，下次打印生效");
+  toast("模板已保存，下次打印按新模板渲染");
+}
+
+/* ================= 订单流水 ================= */
+function initFlowFilter() {
+  $("fTable").innerHTML = `<option value="">全部桌号</option>` + TABLES.map(t => `<option>${t.id}</option>`).join("");
+}
+const TODAY = "11-27";
+function inDateRange(timeStr, range, from, to) {
+  if (range === "all") return true;
+  const d = timeStr.slice(0, 5); // "MM-DD"
+  if (range === "today") return d === TODAY;
+  if (range === "7d") return REV7.some(r => r.d === d); // 近 7 日
+  if (range === "custom") {
+    const f = from ? from.slice(5) : "00-00"; // 日期选择器值 "2026-11-21" → "11-21"
+    const t = to ? to.slice(5) : "99-99";
+    return d >= f && d <= t;
+  }
+  return true;
+}
+function toggleCustomDate() {
+  $("customDateBox").style.display = $("fDate").value === "custom" ? "inline-flex" : "none";
+  renderOrderFlow();
+}
+function flowFilterList() {
+  const no = $("fOrderNo").value.trim();
+  const tb = $("fTable").value;
+  const st = $("fStatus").value;
+  const dt = $("fDate").value;
+  let from = $("fDateFrom").value, to = $("fDateTo").value;
+  if (from && to && from.slice(5) > to.slice(5)) { [from, to] = [to, from]; }
+  const list = ORDERS.filter(o =>
+    (!no || o.no.includes(no)) && (!tb || o.tableId === tb) && (!st || o.status === st) && inDateRange(o.time, dt, from, to));
+  return { no, tb, st, dt, from, to, list };
+}
+function renderOrderFlow() {
+  const { no, tb, st, dt, from, to, list } = flowFilterList();
+  const pg = paginate("flow", list, 8, [no, tb, st, dt, from, to].join("|"));
+  const total = list.reduce((s, o) => s + orderTotal(o), 0);
+  const rangeTxt = dt === "custom" ? (from || to ? ` · 区间 ${from ? from.slice(5) : "…"} ~ ${to ? to.slice(5) : "…"}` : "") : "";
+  $("flowSummary").innerHTML = `<b>${list.length}</b> 条 · ¥${fmt(total)}${rangeTxt}`;
+  $("flowRows").innerHTML = pg.slice.length ? pg.slice.map(o => `
+    <tr class="rowlink" onclick="showFlowDetail('${o.no}')">
+      <td class="num">${o.no}</td>
+      <td><b class="num">${o.tableId}</b></td>
+      <td class="num">${o.time}</td>
+      <td class="num">${orderQty(o)}</td>
+      <td class="num" style="font-weight:700">¥${fmt(orderTotal(o))}</td>
+      <td><span class="tag ${STATUS_TAG[o.status]}">${STATUS_TXT[o.status]}</span></td>
+      <td><button class="btn sm" onclick="event.stopPropagation();showFlowDetail('${o.no}')">详情</button></td>
+    </tr>`).join("") : `<tr><td colspan="7"><div class="empty">无符合条件的订单</div></td></tr>`;
+  $("flowPager").innerHTML = pagerHtml("flow", pg);
+}
+function resetFlowFilters() {
+  $("fOrderNo").value = ""; $("fDate").value = "all";
+  $("customDateBox").style.display = "none";
+  $("fTable").value = ""; $("fStatus").value = "";
+  renderOrderFlow();
+  toast("订单筛选已重置");
+}
+function showFlowDetail(no) {
+  const o = ORDERS.find(x => x.no === no);
+  $("flowDetailBody").innerHTML = `
+    <div style="font-size:12px;color:var(--ink-2);margin-bottom:8px" class="num">
+      订单号 ${o.no} · 桌号 ${o.tableId} · ${o.people}人 · ${o.time} · 堂食<br>
+      状态：<span class="tag ${STATUS_TAG[o.status]}">${STATUS_TXT[o.status]}</span>
+      ${o.payMethod ? " · 结算方式：" + o.payMethod : ""}${o.settleAmount ? " · 实收 ¥" + fmt2(o.settleAmount) : ""}
+    </div>
+    ${o.items.map(i => `
+      <div class="oi-row ${i.returned ? "returned" : ""}">
+        <div class="oi-name">${i.name}<span class="spec num">${i.specText}</span></div>
+        <div class="oi-qty num">×${i.qty}</div>
+        <div class="oi-price num">¥${fmt(i.price * i.qty)}</div>
+      </div>`).join("")}
+    ${o.note ? `<div style="font-size:12px;color:var(--ink-2);margin-top:10px">整单备注：${o.note}</div>` : ""}
+    <div style="display:flex;justify-content:flex-end;gap:6px;align-items:baseline;margin-top:14px;font-size:12px;color:var(--ink-2)">
+      合计 <span class="price" style="font-size:20px"><span class="yen">¥</span>${fmt(orderTotal(o))}</span>
+    </div>
+    <button class="btn sm" style="margin-top:10px" onclick="closeModal();reprintOrder('${o.no}')">重打后厨小票</button>
+  `;
+  openModal("flowDetailModal");
+}
+function reprintOrder(no) {
+  addLog(no, "后厨打印机", "后厨小票", "成功", "手动重打");
+  renderPrintLog();
+  toast(`已重打后厨小票（${no}）`);
+}
+function exportOrders() {
+  const { list } = flowFilterList();
+  const amt = list.reduce((s, o) => s + (o.settleAmount ?? orderTotal(o)), 0);
+  toast(`已按当前筛选导出 Excel：${list.length} 条订单，实收合计 ¥${fmt(amt)}（对账用）`);
+}
+
+/* ================= 操作日志 ================= */
+function initAuditFilter() {
+  $("opAction").innerHTML = `<option value="">全部操作</option>` + Object.keys(OP_ACTIONS).map(k => `<option value="${k}">${OP_ACTIONS[k]}</option>`).join("");
+  const users = [...new Set(OP_LOG.map(l => l.user))];
+  $("opUser").innerHTML = `<option value="">全部操作人</option>` + users.map(u => `<option>${u}</option>`).join("");
+}
+function auditFilterList() {
+  const kw = $("opKw").value.trim();
+  const act = $("opAction").value;
+  const user = $("opUser").value;
+  const dt = $("opDate").value;
+  let from = $("opDateFrom").value, to = $("opDateTo").value;
+  if (from && to && from.slice(5) > to.slice(5)) { [from, to] = [to, from]; }
+  const list = OP_LOG.filter(l =>
+    (!kw || l.target.includes(kw) || l.detail.includes(kw)) &&
+    (!act || l.action === act) &&
+    (!user || l.user === user) &&
+    inDateRange(l.time, dt, from, to));
+  return { kw, act, user, dt, from, to, list };
+}
+function toggleCustomOpDate() {
+  $("opCustomDateBox").style.display = $("opDate").value === "custom" ? "inline-flex" : "none";
+  renderAudit();
+}
+function resetAuditFilters() {
+  $("opKw").value = ""; $("opAction").value = ""; $("opUser").value = "";
+  $("opDate").value = "all";
+  $("opCustomDateBox").style.display = "none";
+  renderAudit();
+  toast("操作日志筛选已重置");
+}
+function renderAudit() {
+  const { kw, act, user, dt, from, to, list } = auditFilterList();
+  const pg = paginate("audit", list, 10, [kw, act, user, dt, from, to].join("|"));
+  const rangeTxt = dt === "custom" ? (from || to ? ` · 区间 ${from ? from.slice(5) : "…"} ~ ${to ? to.slice(5) : "…"}` : "") : "";
+  $("opSummary").innerHTML = `共 <b>${list.length}</b> 条记录${rangeTxt}`;
+  $("opRows").innerHTML = pg.slice.length ? pg.slice.map(l => `
+    <tr>
+      <td class="num">${l.time}</td>
+      <td><b>${l.user}</b></td>
+      <td><span class="tag ${OP_TAG[l.action] || "tag off"}">${OP_ACTIONS[l.action] || l.action}</span></td>
+      <td class="num" style="font-size:12px">${l.target}</td>
+      <td style="font-size:12px;color:var(--ink-2)" title="${l.detail}">${l.detail.length > 20 ? l.detail.slice(0, 20) + "…" : l.detail || "—"}</td>
+      <td class="num" style="font-size:11px;color:var(--ink-3)">${l.ip}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" onclick="showOpDetail('${l.id}')">详情</button>
+        <button class="btn sm danger" onclick="delOpLog('${l.id}')">删除</button>
+      </td>
+    </tr>`).join("") : `<tr><td colspan="7"><div class="empty">无符合条件的操作记录</div></td></tr>`;
+  $("opPager").innerHTML = pagerHtml("audit", pg);
+}
+function showOpDetail(id) {
+  const l = OP_LOG.find(x => x.id === id);
+  if (!l) return;
+  const row = (k, v) => `<div style="display:flex;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px">
+    <span style="width:76px;flex-shrink:0;color:var(--ink-3)">${k}</span>
+    <span style="flex:1;min-width:0;word-break:break-all" class="num">${v}</span></div>`;
+  $("opDetailBody").innerHTML =
+    row("操作时间", l.time) +
+    row("操作人", l.user) +
+    row("操作类型", `<span class="tag ${OP_TAG[l.action] || "tag off"}">${OP_ACTIONS[l.action] || l.action}</span>`) +
+    row("操作对象", l.target) +
+    row("操作详情", l.detail || "—") +
+    row("来源 IP", l.ip) +
+    `<div style="padding:9px 0 0;font-size:11px;color:var(--ink-3)">日志编号 ${l.id} · 仅管理员可查看，操作留痕建议保留 90 天以上</div>`;
+  $("opDetailDelBtn").onclick = () => delOpLog(l.id);
+  openModal("opDetailModal");
+}
+function delOpLog(id) {
+  const l = OP_LOG.find(x => x.id === id);
+  if (!l) return;
+  askConfirm("删除操作日志", `确定删除该条操作记录吗？<br><b class="num" style="font-size:12px">${l.time} · ${l.user} · ${OP_ACTIONS[l.action] || l.action}</b><br><span style="font-size:11px;color:var(--ink-3)">删除后不可恢复，仅清理留痕记录，不影响订单等业务数据。建议通过定期归档而非手动删除。</span>`, () => {
+    OP_LOG = OP_LOG.filter(x => x.id !== id);
+    renderAudit();
+    toast("操作日志已删除");
+  }, "确认删除", true);
+}
+
+/* ================= 报表 ================= */
+let repRange = "today";   // 全局口径：today | 7d
+let trendRange = "7d";    // 趋势卡独立窗口：7d | 30d（跨期指标不随全局口径）
+function setReportRange(r) {
+  repRange = r;
+  [...$("repRange").children].forEach(b => b.classList.toggle("active", b.textContent === (r === "today" ? "今日" : "近 7 日")));
+  renderReports();
+}
+function setTrendRange(r) {
+  trendRange = r;
+  [...$("trendRange").children].forEach(b => b.classList.toggle("active", b.textContent === (r === "7d" ? "近 7 日" : "近 30 日")));
+  renderReports();
+}
+function todayPaid() { return ORDERS.filter(o => o.status === "paid"); }
+function todayRev() { return todayPaid().reduce((s, o) => s + (o.settleAmount ?? orderTotal(o)), 0); }
+function hourDist(range = "today") {
+  const map = {};
+  todayPaid().forEach(o => {
+    const h = o.time.slice(6, 8);
+    map[h] = (map[h] || 0) + (o.settleAmount ?? orderTotal(o));
+  });
+  // 近 7 日口径：按今日分时分布 × 6.5 推算累计（演示数据）
+  const k = range === "7d" ? 6.5 : 1;
+  return ["09","10","11","12","13","14","15","16","17","18","19","20","21"].map(h => ({ h, v: Math.round((map[h] || 0) * k) }));
+}
+function rankToday() {
+  const m = {};
+  todayPaid().forEach(o => o.items.forEach(i => {
+    if (!i.returned && !STAPLES.includes(i.name)) m[i.name] = (m[i.name] || 0) + i.qty;
+  }));
+  return Object.entries(m).map(([name, qty]) => ({ name, qty })).sort((a, b) => b.qty - a.qty);
+}
+function payToday() {
+  const m = {};
+  todayPaid().forEach(o => {
+    const k = o.payMethod || "其他";
+    m[k] = m[k] || { cnt: 0, amt: 0 };
+    m[k].cnt++; m[k].amt += (o.settleAmount ?? orderTotal(o));
+  });
+  return Object.entries(m).map(([mm, v]) => ({ m: mm, ...v })).sort((a, b) => b.amt - a.amt);
+}
+function deltaHtml(cur, base, unit = "") {
+  if (!base) return "—";
+  const p = (cur - base) / base * 100;
+  const cls = p >= 0 ? "delta-up" : "delta-down";
+  const arrow = p >= 0 ? "▲" : "▼";
+  return `<span class="${cls}">${arrow} ${Math.abs(p).toFixed(1)}%</span> ${unit}`;
+}
+function renderBarChart(el, data, highlightIdx = -1, compact = false) {
+  el.classList.toggle("compact", compact);
+  const max = Math.max(...data.map(r => r.v), 1);
+  const maxIdx = data.findIndex(r => r.v === max);
+  el.innerHTML = data.map((r, i) => {
+    // compact 模式（多柱时）：仅最高柱与高亮柱显示数值，避免拥挤
+    const showVal = !compact || i === highlightIdx || i === maxIdx;
+    return `
+    <div class="bar-col">
+      <div class="val num">${showVal ? (r.v ? fmt(r.v) : "—") : ""}</div>
+      <div class="bar" data-v="${r.v / max}" style="height:4px;background:${i === highlightIdx ? "var(--primary)" : "#d3d6db"}"></div>
+      <div class="lbl">${r.h ? r.h + "时" : r.d}${r.d === TODAY ? " (今)" : ""}</div>
+    </div>`;
+  }).join("");
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.querySelectorAll(".bar").forEach(b => b.style.height = Math.max(4, +b.dataset.v * 100) + "%");
+  }));
+}
+function renderReports() {
+  const paid = todayPaid();
+  const rev = todayRev();
+  const weekRev = REV7.reduce((s, r) => s + (r.d === TODAY ? rev : r.v), 0);
+
+  /* 经营总览 */
+  $("ovSub").textContent = repRange === "today" ? "口径：今日 · 对比昨日全天" : "口径：近 7 日 · 对比上周";
+  if (repRange === "today") {
+    animateNum($("rpRev"), rev, 2);
+    $("rpRevDelta").innerHTML = deltaHtml(rev, 2418) + " 较昨日全天";
+    animateNum($("rpOrders"), paid.length);
+    $("rpOrdersDelta").innerHTML = `已结清 <b>${paid.length}</b> · 进行中 <b>${ORDERS.filter(o => o.status === "pending" || o.status === "hold").length}</b>`;
+    animateNum($("rpAvg"), paid.length ? rev / paid.length : 0, 2);
+    $("rpAvgDelta").innerHTML = deltaHtml(paid.length ? rev / paid.length : 0, YDA_AVG) + " 较昨日";
+    const rs = RETURN_STATS.today;
+    $("rpRetRate").textContent = rev ? (rs.amt / rev * 100).toFixed(1) + "%" : "—";
+    $("rpRetDelta").innerHTML = `今日退菜 <b>${rs.cnt}</b> 次 · ¥${fmt(rs.amt)}（近 7 日 ${RETURN_STATS["7d"].cnt} 次）`;
+    const hd = hourDist();
+    const peak = hd.reduce((a, b) => b.v > a.v ? b : a, hd[0]);
+    $("rpPeak").textContent = peak.v ? peak.h + " 时" : "—";
+    $("rpPeakDelta").innerHTML = peak.v ? `营收 ¥${fmt(peak.v)} · 占今日 <b>${Math.round(peak.v / rev * 100)}%</b>` : "暂无结账数据";
+  } else {
+    animateNum($("rpRev"), weekRev, 2);
+    $("rpRevDelta").innerHTML = deltaHtml(weekRev, LAST_WEEK_REV) + " 较上周";
+    animateNum($("rpOrders"), WEEK_ORDERS);
+    $("rpOrdersDelta").innerHTML = `日均 <b>${Math.round(WEEK_ORDERS / 7)}</b> 单 · 今日已结清 <b>${paid.length}</b>`;
+    animateNum($("rpAvg"), weekRev / WEEK_ORDERS, 2);
+    $("rpAvgDelta").innerHTML = `客单价近 7 日保持 ¥${fmt(weekRev / WEEK_ORDERS)} 水位`;
+    const rs = RETURN_STATS["7d"];
+    $("rpRetRate").textContent = weekRev ? (rs.amt / weekRev * 100).toFixed(1) + "%" : "—";
+    $("rpRetDelta").innerHTML = `近 7 日退菜 <b>${rs.cnt}</b> 次 · ¥${fmt(rs.amt)}`;
+    $("rpPeak").textContent = "11 时";
+    $("rpPeakDelta").innerHTML = `近 7 日午市为稳定高峰，建议 <b>10:30 前完成备货</b>`;
+  }
+
+  /* 时段分布（随全局口径） */
+  const hd = hourDist(repRange);
+  renderBarChart($("hourBars"), hd, hd.reduce((a, b, i, arr) => b.v > arr[a].v ? i : a, 0));
+  $("hourSub").textContent = repRange === "today"
+    ? "今日 · 按结账时间统计 · 排班备货参考"
+    : "近 7 日累计 · 分时汇总 · 排班备货参考";
+
+  /* 营收趋势（卡片自持窗口，今日柱实时取收银数据） */
+  const trend = trendRange === "7d"
+    ? REV7.map(r => ({ d: r.d, v: r.d === TODAY ? rev : r.v }))
+    : TREND_HIST.concat(REV7).map(r => ({ d: r.d, v: r.d === TODAY ? rev : r.v }));
+  const compact = trendRange === "30d";
+  renderBarChart($("revBars"), trend, trend.findIndex(r => r.d === TODAY), compact);
+  // 30 日模式下标签稀疏显示（每 5 天 + 最后一天），避免拥挤
+  if (compact) {
+    [...$("revBars").querySelectorAll(".lbl")].forEach((el, i) => {
+      if (i % 5 !== 4 && i !== trend.length - 1 && trend[i].d !== TODAY) el.textContent = "";
+    });
+  }
+  $("trendSub").textContent = trendRange === "7d"
+    ? `近 7 日合计 ¥${fmt(weekRev)} · 日均 ¥${fmt(weekRev / 7)}`
+    : `近 30 日合计 ¥${fmt(trend.reduce((s, r) => s + r.v, 0))} · 日均 ¥${fmt(trend.reduce((s, r) => s + r.v, 0) / trend.length)}`;
+
+  /* 销量排行 + 滞销 */
+  $("rankTitle").innerHTML = `菜品销量排行 <span class="sub">${repRange === "today" ? "今日 · 主食不计入" : "近 7 日 · 主食不计入"}</span>`;
+  const rank = repRange === "today" ? rankToday() : RANK7;
+  const maxQ = Math.max(...rank.map(r => r.qty), 1);
+  $("rankList").innerHTML = rank.length ? rank.slice(0, 5).map((r, i) => `
+    <div class="rank-row ${i === 0 ? "top" : ""}">
+      <div class="rk">${i + 1}</div>
+      <div class="nm">${r.name}</div>
+      <div class="track"><i style="width:${r.qty / maxQ * 100}%"></i></div>
+      <div class="num" style="font-weight:700;min-width:44px;text-align:right">${r.qty} 份</div>
+    </div>`).join("") : `<div class="empty">今日暂无已结清订单</div>`;
+  $("slowList").innerHTML = SLOW7.map(r => `
+    <div class="slow-row">
+      <span class="slow-dot">!</span>
+      <span style="flex:1">${r.name}</span>
+      <span class="num" style="color:var(--ink-2)">近 7 日仅 ${r.qty} 份</span>
+    </div>`).join("");
+
+  /* 结算方式对账 */
+  const rows = repRange === "today" ? payToday() : PAY7;
+  const paySum = rows.reduce((s, r) => s + r.amt, 0);
+  $("paySub").textContent = repRange === "today" ? `今日 · ${paid.length} 笔已结清` : "近 7 日";
+  $("payRows").innerHTML = rows.map(r => `
+    <tr>
+      <td><b>${r.m}</b></td>
+      <td class="num">${r.cnt}</td>
+      <td class="num" style="font-weight:700">¥${fmt(r.amt)}</td>
+      <td class="num" style="color:var(--ink-2)">${Math.round(r.amt / paySum * 100)}%</td>
+    </tr>`).join("") + `
+    <tr style="border-top:2px solid var(--line)">
+      <td><b>合计（勾稽营收）</b></td>
+      <td class="num">${rows.reduce((s, r) => s + r.cnt, 0)}</td>
+      <td class="num" style="font-weight:800;color:var(--price)">¥${fmt(paySum)}</td>
+      <td></td>
+    </tr>`;
+
+  /* 退菜统计（随全局口径，修复口径标签与数据不一致） */
+  const retRows = repRange === "today" ? RETURN_TODAY : RETURN7;
+  $("retSub").textContent = repRange === "today" ? "今日" : "近 7 日";
+  $("returnRows").innerHTML = retRows.length ? retRows.map(r => `
+    <tr><td>${r.name}</td><td class="num">${r.cnt} 次</td><td class="num">¥${fmt(r.amt)}</td><td style="color:var(--ink-2)">${r.reason}</td></tr>`).join("")
+    : `<tr><td colspan="4"><div class="empty">该口径下暂无退菜记录</div></td></tr>`;
+}
+
+/* ================= 系统设置 ================= */
+function initSettings() {
+  $("setShopName").value = SETTINGS.shopName;
+  $("setReceiptTitle").value = SETTINGS.receiptTitle;
+  $("setOpenTime").value = SETTINGS.openTime || "10:30";
+  $("setCloseTime").value = SETTINGS.closeTime || "21:30";
+  $("setPhone").value = SETTINGS.phone || "";
+  $("setRoundOff").checked = SETTINGS.roundOff;
+  renderUserRows();
+  renderPermRows();
+}
+/* 角色菜单权限配置 */
+const MENU_DESC = {
+  cashier: "点单、挂单、结算、退菜等日常营业操作",
+  dishes: "菜品/分类/加料维护与售罄管理",
+  tables: "区域、桌台与二维码管理",
+  printer: "打印机、小票模板与打印日志",
+  orders: "历史订单查询与导出",
+  reports: "营收/销量/退菜等经营报表",
+  audit: "全系统操作留痕查询（登录/订单/打印/配置）",
+  settings: "门店信息、账号与角色权限配置",
+};
+function renderPermRows() {
+  if (!$("permRows")) return;
+  $("permRows").innerHTML = NAVS.filter(n => n.id).map(n => `
+    <tr>
+      <td><b>${n.name}</b></td>
+      <td><label class="switch"><input type="checkbox" checked disabled title="管理员固定拥有全部权限"><span class="track"></span></label></td>
+      <td><label class="switch"><input type="checkbox" ${ROLE_MENUS.cashier[n.id] ? "checked" : ""} onchange="toggleRoleMenu('${n.id}', this.checked)"><span class="track"></span></label></td>
+      <td style="font-size:11px;color:var(--ink-3)">${MENU_DESC[n.id] || ""}</td>
+    </tr>`).join("");
+}
+function toggleRoleMenu(id, on) {
+  if (id === "cashier" && !on && role !== "admin") return; // 双保险
+  ROLE_MENUS.cashier[id] = on;
+  opLog("PERM_SAVE", "角色菜单权限", `${on ? "开放" : "关闭"}收银员「${PAGE_TITLES[id] || id}」访问`);
+  buildNav();
+  toast(on
+    ? `「${PAGE_TITLES[id]}」已对收银员开放${role !== "admin" ? "" : "，收银员重新登录后可见"}`
+    : `「${PAGE_TITLES[id]}」已对收银员隐藏`);
+}
+function resetRoleMenus() {
+  ROLE_MENUS.cashier = { ...DEFAULT_CASHIER_MENUS };
+  opLog("PERM_SAVE", "角色菜单权限", "恢复默认配置（收银员仅见收银台）");
+  renderPermRows();
+  buildNav();
+  toast("已恢复默认角色菜单配置（收银员仅见收银台）");
+}
+function saveSettings() {
+  const name = $("setShopName").value.trim();
+  if (!name) { toast("门店名称不能为空"); return; }
+  const open = $("setOpenTime").value.trim(), close = $("setCloseTime").value.trim();
+  const tOk = t => !t || /^\d{1,2}:\d{2}$/.test(t);
+  if (!tOk(open) || !tOk(close)) { toast("营业时间格式应为 HH:MM，如 10:30"); return; }
+  SETTINGS.shopName = name;
+  SETTINGS.receiptTitle = $("setReceiptTitle").value.trim() || name;
+  SETTINGS.openTime = open; SETTINGS.closeTime = close;
+  SETTINGS.phone = $("setPhone").value.trim();
+  $("loginShopName").textContent = SETTINGS.shopName;
+  $("brandShopName").textContent = SETTINGS.shopName;
+  opLog("SETTINGS_SAVE", "系统设置", "修改门店信息/营业时间/联系电话");
+  toast("门店信息已保存，顾客端与结账单同步生效");
+}
+function renderUserRows() {
+  $("userRows").innerHTML = USERS.map((u, idx) => `
+    <tr>
+      <td><b>${u.name}</b>${u.name === currentUser.name ? ' <span class="tag off" style="font-size:10px">当前</span>' : ""}</td>
+      <td>${u.role}</td>
+      <td>${u.enabled ? '<span class="tag ok">启用</span>' : '<span class="tag off">已禁用</span>'}</td>
+      <td>
+        <button class="btn sm" onclick="switchRole(${idx})" ${u.name === currentUser.name ? "disabled" : ""} title="${u.name === currentUser.name ? "不能修改自己的角色" : ""}">改角色</button>
+        <button class="btn sm ${u.enabled ? "danger" : ""}" onclick="toggleUser(${idx})" ${u.name === currentUser.name ? "disabled" : ""}>${u.enabled ? "禁用" : "启用"}</button>
+      </td>
+    </tr>`).join("");
+}
+function switchRole(idx) {
+  const u = USERS[idx];
+  askConfirm("调整角色", `将账号「<b>${u.name}</b>」的角色由 <b>${u.role}</b> 调整为 <b>${u.role === "管理员" ? "收银员" : "管理员"}</b>？${u.role === "管理员" ? "调整后将失去管理后台访问权限。" : "调整后将获得管理后台全部权限。"}`, () => {
+    u.role = u.role === "管理员" ? "收银员" : "管理员";
+    opLog("USER_SAVE", u.name, `角色调整为 ${u.role}，重新登录后生效`);
+    renderUserRows();
+    toast(`「${u.name}」角色已调整为 ${u.role}，重新登录后生效`);
+  }, "确认调整", true);
+}
+function toggleUser(idx) {
+  USERS[idx].enabled = !USERS[idx].enabled;
+  opLog("USER_SAVE", USERS[idx].name, USERS[idx].enabled ? "启用账号" : "禁用账号");
+  renderUserRows();
+  toast(USERS[idx].enabled ? `账号「${USERS[idx].name}」已启用` : `账号「${USERS[idx].name}」已禁用`);
+}
+function addUser() {
+  const name = $("newUserName").value.trim();
+  if (!name) { toast("请输入账号名"); return; }
+  if (USERS.find(u => u.name === name)) { toast("账号已存在"); return; }
+  const pass = $("newUserPass").value.trim() || "123456";
+  if (pass.length < 6) { toast("初始密码至少 6 位"); return; }
+  USERS.push({ name, role: $("newUserRole").value, enabled: true });
+  $("newUserName").value = ""; $("newUserPass").value = "";
+  opLog("USER_SAVE", name, `新增${$("newUserRole").value === "管理员" ? "管理员" : "收银员"}账号`);
+  renderUserRows();
+  toast(`账号「${name}」已创建，初始密码 ${pass}，首次登录建议修改`);
+}
+
+/* ================= 初始化 ================= */
+renderAll("cashier");
+// 二维码弹窗打开时渲染
+const _openModal = openModal;
+openModal = function(id) { _openModal(id); if (id === "qrModal") renderQrGrid(); };
+</script>
+</body>
+</html>

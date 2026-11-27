@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>扫码点餐 · 顾客端原型</title>
+<style>
+  :root {
+    --primary: #17181c;
+    --primary-weak: #f2f3f5;
+    --price: #d5432e;
+    --ink: #17181c;
+    --ink-2: #6f7379;
+    --ink-3: #a0a4ab;
+    --line: #eceef0;
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --radius: 12px;
+    --ease-out: cubic-bezier(.22, .8, .3, 1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  .phone {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,.06);
+  }
+
+  /* 通用按压反馈 */
+  .pressable { transition: transform .12s var(--ease-out), opacity .12s; }
+  .pressable:active { transform: scale(.94); opacity: .85; }
+
+  /* ---------- 入座页 ---------- */
+  .entry {
+    position: absolute; inset: 0;
+    z-index: 40;
+    background: var(--card);
+    display: flex; flex-direction: column;
+    color: var(--ink);
+    transition: transform .4s var(--ease-out), opacity .4s;
+  }
+  .entry.hide { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .entry-top { animation: fadeUp .5s .04s var(--ease-out) both; }
+  .entry-card { animation: fadeUp .5s .12s var(--ease-out) both; }
+  .entry-btn  { animation: fadeUp .5s .20s var(--ease-out) both; }
+  .entry-foot { animation: fadeUp .5s .28s var(--ease-out) both; }
+  .entry-top {
+    padding: calc(env(safe-area-inset-top,0px) + 64px) 24px 0;
+    text-align: center;
+  }
+  .entry-logo {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: var(--primary);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .entry-logo svg { width: 34px; height: 34px; }
+  .entry-shop { font-size: 21px; font-weight: 700; letter-spacing: .5px; }
+  .entry-scan {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--ink-3);
+    margin-top: 10px;
+  }
+  .entry-card {
+    margin: 32px 20px 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    background: var(--card);
+  }
+  .entry-table-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .entry-table-label { font-size: 12px; color: var(--ink-3); margin-bottom: 6px; }
+  .entry-table-no { font-size: 26px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .entry-table-tip { font-size: 11px; color: var(--ink-3); text-align: right; line-height: 1.6; }
+  .entry-people-label { font-size: 13px; color: var(--ink-2); margin: 16px 0 10px; }
+  .people-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .people-grid .p-opt {
+    height: 42px;
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--ink-2);
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s, transform .12s var(--ease-out);
+  }
+  .people-grid .p-opt:active { transform: scale(.93); }
+  .people-grid .p-opt.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 600;
+    animation: popSel .18s var(--ease-out);
+  }
+  @keyframes popSel { 0% { transform: scale(.92); } 100% { transform: scale(1); } }
+  .entry-btn {
+    margin: 28px 20px 0;
+    height: 50px;
+    border: none; border-radius: 12px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 16px; font-weight: 600;
+    letter-spacing: 4px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .entry-btn:active { transform: scale(.97); }
+  .entry-foot {
+    margin-top: auto;
+    text-align: center;
+    font-size: 11px;
+    color: var(--ink-3);
+    padding: 0 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+    line-height: 1.7;
+  }
+  .main-body { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .main-body.show { display: flex; }
+  .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .view.show { display: flex; animation: viewIn .26s var(--ease-out); }
+  @keyframes viewIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- 顶部 ---------- */
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+    flex-shrink: 0;
+  }
+  .topbar .shop-row { display: flex; align-items: center; gap: 10px; }
+  .shop-logo {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .shop-logo svg { width: 22px; height: 22px; }
+  .shop-name { font-size: 17px; font-weight: 700; }
+  .shop-sub { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+  .notice {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--ink-3);
+    line-height: 1.5;
+    display: flex; gap: 8px; align-items: center;
+  }
+  .notice::before {
+    content: "";
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--ink-3);
+    flex-shrink: 0;
+  }
+
+  /* 桌号条 */
+  .table-bar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .table-tag {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 5px 12px;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .table-text { font-size: 12px; color: var(--ink-2); flex: 1; line-height: 1.4; }
+
+  /* ---------- 主体 ---------- */
+  .main { flex: 1; display: flex; overflow: hidden; }
+  .cat-nav {
+    width: 84px;
+    background: var(--bg);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding-bottom: 100px;
+    border-right: 1px solid var(--line);
+  }
+  .cat-item {
+    padding: 15px 8px;
+    font-size: 13px;
+    color: var(--ink-2);
+    text-align: center;
+    line-height: 1.35;
+    position: relative;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+  }
+  .cat-item.active { background: var(--card); color: var(--ink); font-weight: 700; }
+  .cat-item.active::before {
+    content: "";
+    position: absolute; left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 16px;
+    background: var(--primary);
+    border-radius: 0 2px 2px 0;
+  }
+  .cat-item .badge {
+    display: inline-block;
+    min-width: 14px; height: 14px;
+    background: var(--primary); color: #fff;
+    font-size: 10px; line-height: 14px;
+    border-radius: 7px;
+    padding: 0 3px;
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .dish-panel { flex: 1; overflow-y: auto; padding: 12px 14px 120px; background: var(--card); }
+  .sec-title {
+    font-size: 12px; font-weight: 700; padding: 6px 0 10px;
+    color: var(--ink-3); letter-spacing: 2px;
+  }
+  .dish-card {
+    display: flex; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .dish-card:last-child { border-bottom: none; }
+  .dish-img {
+    width: 80px; height: 80px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .dish-img svg { width: 44px; height: 44px; }
+  .dish-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dish-name { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+  .dish-desc {
+    font-size: 11px; color: var(--ink-3);
+    margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .dish-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .mini-tag {
+    font-size: 10px; color: var(--ink-2);
+    border: 1px solid var(--line);
+    padding: 1px 6px; border-radius: 4px;
+  }
+  .dish-bottom { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; padding-top: 8px; }
+  .price { color: var(--price); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .price .yen { font-size: 11px; font-weight: 600; margin-right: 1px; }
+  .price .origin { color: var(--ink-3); font-size: 11px; font-weight: 400; text-decoration: line-through; margin-left: 4px; }
+  .sold-tag {
+    position: absolute; inset: 0;
+    background: rgba(247,248,250,.7);
+    backdrop-filter: blur(1px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sold-tag span {
+    background: rgba(23,24,28,.78);
+    color: #fff; font-size: 11px;
+    padding: 4px 10px; border-radius: 999px;
+    letter-spacing: 3px;
+  }
+  .dish-card.sold .dish-img svg { opacity: .22; }
+  .dish-card.sold .dish-name { color: var(--ink-3); }
+  .add-btn {
+    width: 28px; height: 28px; border-radius: 9px;
+    background: var(--primary); color: #fff;
+    border: none; font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .add-btn:active { transform: scale(.85); }
+  .spec-btn {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .spec-btn:active { transform: scale(.92); }
+
+  /* 加购飞入动画 */
+  .fly-dot {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--primary);
+    z-index: 50;
+    pointer-events: none;
+    transition: transform .5s cubic-bezier(.35,0,.45,1), opacity .5s;
+  }
+
+  /* ---------- 底部购物车 ---------- */
+  .cart-bar {
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    height: 54px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    display: flex; align-items: center;
+    box-shadow: 0 8px 28px rgba(0,0,0,.10);
+    z-index: 20;
+    padding-right: 6px;
+  }
+  .cart-icon-wrap {
+    position: relative;
+    width: 42px; height: 42px;
+    margin-left: 6px;
+    border-radius: 11px;
+    background: var(--primary);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform .2s var(--ease-out);
+  }
+  .cart-icon-wrap svg { width: 20px; height: 20px; }
+  .cart-icon-wrap.bump { animation: bump .35s var(--ease-out); }
+  @keyframes bump { 0%{transform:scale(1)} 40%{transform:scale(1.14)} 100%{transform:scale(1)} }
+  .cart-badge {
+    position: absolute; right: -6px; top: -6px;
+    min-width: 18px; height: 18px;
+    background: var(--price); color: #fff;
+    font-size: 11px; font-weight: 700;
+    line-height: 18px; text-align: center;
+    border-radius: 9px; padding: 0 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .cart-total { flex: 1; padding-left: 12px; }
+  .cart-total .money { font-size: 17px; font-weight: 700; color: var(--price); font-variant-numeric: tabular-nums; }
+  .cart-total .money .yen { font-size: 11px; }
+  .cart-total .hint { font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+  .submit-btn {
+    height: 42px;
+    padding: 0 22px;
+    border: none; border-radius: 11px;
+    background: var(--primary);
+    color: #fff; font-size: 14px; font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .submit-btn:active { transform: scale(.96); }
+  .submit-btn:disabled { background: var(--primary-weak); color: var(--ink-3); cursor: not-allowed; transform: none; }
+
+  /* ---------- 弹层通用 ---------- */
+  .mask {
+    position: absolute; inset: 0;
+    background: rgba(23,24,28,.45);
+    z-index: 45;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  .mask.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-radius: 16px 16px 0 0;
+    z-index: 46;
+    transform: translateY(105%);
+    transition: transform .3s cubic-bezier(.32,.72,.24,1);
+    max-height: 82%;
+    display: flex; flex-direction: column;
+  }
+  .sheet::before {
+    content: "";
+    position: absolute; top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: #e4e6e9;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-head {
+    padding: 24px 16px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .sheet-title { font-size: 16px; font-weight: 700; }
+  .close-x {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--primary-weak); border: none;
+    color: var(--ink-2); font-size: 13px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .close-x:active { transform: scale(.88); }
+  .sheet-body { overflow-y: auto; padding: 0 16px 16px; }
+  .sheet-foot {
+    flex-shrink: 0;
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  /* ---------- 规格弹窗 ---------- */
+  .spec-dish { display: flex; gap: 10px; align-items: center; padding-bottom: 12px; }
+  .spec-dish .dish-img { width: 54px; height: 54px; border-radius: 10px; }
+  .spec-dish .dish-img svg { width: 30px; height: 30px; }
+  .spec-dish .n { font-size: 15px; font-weight: 700; }
+  .spec-dish .p { color: var(--price); font-weight: 700; font-size: 17px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .spec-dish .p .yen { font-size: 11px; }
+  .group-title { font-size: 12px; color: var(--ink-3); margin: 12px 0 8px; }
+  .opt-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt {
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink-2);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .opt:active { transform: scale(.94); }
+  .opt.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+  .opt.disabled { color: #c6c9ce; background: var(--bg); text-decoration: line-through; cursor: not-allowed; }
+  .opt .plus { font-size: 10px; margin-left: 2px; }
+  .addon-list { display: flex; flex-direction: column; gap: 8px; }
+  .addon-limit { font-size: 10px; color: var(--ink-3); background: var(--bg); border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+  .addon-stepper { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 8px; padding: 2px 6px; }
+  .addon-stepper button { width: 22px; height: 22px; border-radius: 7px; border: none; background: var(--primary); color: #fff; font-size: 13px; line-height: 1; cursor: pointer; }
+  .addon-stepper button.off { background: #d9dcdf; color: #fff; }
+  .addon-stepper .num { min-width: 16px; text-align: center; font-size: 12px; font-weight: 700; }
+  .addon-row {
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .12s var(--ease-out);
+  }
+  .addon-row:active { transform: scale(.98); }
+  .addon-row.on { border-color: var(--primary); background: var(--bg); }
+  .addon-name { font-size: 13px; }
+  .addon-price { font-size: 12px; color: var(--price); font-variant-numeric: tabular-nums; }
+  .checkbox {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid #c6c9ce;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: transparent; font-size: 11px;
+    transition: all .15s;
+  }
+  .addon-row.on .checkbox { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .stepper { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .stepper button {
+    width: 26px; height: 26px; border-radius: 8px;
+    border: none; font-size: 15px; cursor: pointer;
+    background: var(--primary-weak); color: var(--ink);
+    transition: transform .12s var(--ease-out);
+  }
+  .stepper button:active { transform: scale(.85); }
+  .stepper button.minus-off { background: var(--bg); color: #ccd0d6; }
+  .stepper .num { font-size: 15px; font-weight: 700; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+  .btn-primary {
+    flex: 1; height: 44px;
+    border: none; border-radius: 12px;
+    background: var(--primary); color: #fff;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .btn-primary:active { transform: scale(.97); }
+
+  /* ---------- 购物车抽屉 ---------- */
+  .cart-list { padding-bottom: 4px; }
+  .cart-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    animation: fadeUp .25s var(--ease-out);
+  }
+  .cart-row:last-child { border-bottom: none; }
+  .cart-info { flex: 1; min-width: 0; }
+  .cart-name { font-size: 14px; font-weight: 600; }
+  .cart-spec {
+    font-size: 11px; color: var(--ink-3);
+    background: var(--primary-weak);
+    display: inline-block;
+    padding: 3px 8px; border-radius: 6px;
+    margin-top: 5px;
+    max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+  }
+  .cart-spec.editable { color: var(--ink); }
+  .cart-right { text-align: right; flex-shrink: 0; }
+  .cart-price { color: var(--price); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .cart-price .yen { font-size: 11px; }
+
+  .empty-cart { text-align: center; padding: 44px 0; color: var(--ink-3); font-size: 13px; line-height: 1.7; }
+  .empty-cart svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: .3; }
+
+  /* 备注 */
+  .note-block { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 12px; }
+  .note-label { font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .quick-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .quick-tag {
+    font-size: 11px; padding: 5px 10px; border-radius: 6px;
+    background: var(--card); border: 1px solid var(--line); color: var(--ink-2);
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .quick-tag:active { transform: scale(.93); }
+  .quick-tag.on { border-color: var(--primary); color: var(--ink); background: var(--primary-weak); font-weight: 600; }
+  .note-input {
+    width: 100%; border: none; outline: none; resize: none;
+    font-size: 12px; font-family: inherit;
+    background: var(--card); border-radius: 8px;
+    padding: 8px 10px; color: var(--ink);
+    height: 56px;
+  }
+  .note-input::placeholder { color: #b9bdc4; }
+
+  /* ---------- 订单列表 ---------- */
+  .orders-body { flex: 1; overflow-y: auto; padding: 12px; }
+  .order-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: transform .12s var(--ease-out);
+    animation: fadeUp .3s var(--ease-out) both;
+  }
+  .order-card:active { transform: scale(.98); }
+  .order-card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .order-card-no { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .order-card-time { font-size: 11px; color: var(--ink-3); margin-top: 2px; font-weight: 400; }
+  .status-chip {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .status-chip.pending { background: var(--primary); color: #fff; }
+  .status-chip.paid { background: none; color: var(--ink-2); border: 1px solid var(--line); }
+  .order-card-items { font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  .order-card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--line);
+  }
+  .order-card-more { font-size: 11px; color: var(--ink-3); }
+  .orders-empty { text-align: center; padding: 60px 0; color: var(--ink-3); font-size: 13px; line-height: 1.8; }
+  .orders-empty svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: .3; }
+  .top-order-btn {
+    margin-left: auto;
+    background: none; border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12px; color: var(--ink);
+    padding: 6px 12px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform .12s var(--ease-out);
+  }
+  .top-order-btn:active { transform: scale(.94); }
+
+  /* ---------- 搜索 ---------- */
+  .search-bar {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .search-bar:active { background: #ecedf0; }
+  .search-bar svg { width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
+  .search-bar .ph { font-size: 13px; color: var(--ink-3); }
+  .search-view {
+    position: absolute; inset: 0;
+    background: var(--card);
+    z-index: 26;
+    display: none; flex-direction: column;
+  }
+  .search-view.show { display: flex; animation: viewIn .22s var(--ease-out); }
+  .search-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .search-input-wrap {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: var(--bg);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 9px 12px;
+    transition: border-color .15s, background .15s;
+  }
+  .search-input-wrap:focus-within { background: var(--card); border-color: var(--primary); }
+  .search-input-wrap svg { width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
+  .search-input { flex: 1; border: none; outline: none; background: none; font-size: 13px; color: var(--ink); min-width: 0; }
+  .search-input::placeholder { color: var(--ink-3); }
+  .search-clear {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #cdd0d5; color: #fff; border: none;
+    font-size: 9px; line-height: 1;
+    display: none; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .search-clear.show { display: flex; }
+  .search-cancel {
+    background: none; border: none;
+    font-size: 13px; color: var(--ink-2);
+    cursor: pointer; flex-shrink: 0;
+    padding: 4px 0;
+  }
+  .search-body { flex: 1; overflow-y: auto; padding: 14px 16px calc(env(safe-area-inset-bottom,0px) + 100px); }
+  .search-sec-label { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-bottom: 10px; }
+  .hot-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .hot-chip {
+    font-size: 12px; color: var(--ink-2);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .hot-chip:active { transform: scale(.93); background: var(--primary-weak); }
+  .search-count { font-size: 11px; color: var(--ink-3); padding: 2px 0 4px; }
+  .search-empty { text-align: center; padding: 64px 0; color: var(--ink-3); font-size: 13px; line-height: 1.8; }
+  .search-empty svg { width: 44px; height: 44px; margin-bottom: 10px; opacity: .3; }
+  .kw-mark { color: var(--price); }
+  .back-btn {
+    width: 32px; height: 32px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); color: var(--ink);
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform .12s var(--ease-out);
+  }
+  .back-btn:active { transform: scale(.9); }
+
+  /* ---------- 提交成功 ---------- */
+  .success-card { text-align: center; padding: 26px 16px 8px; animation: fadeUp .35s var(--ease-out) both; }
+  .success-icon { margin: 0 auto 16px; width: 56px; height: 56px; }
+  .success-icon circle {
+    stroke: var(--primary); stroke-width: 2.5;
+    fill: none;
+    stroke-dasharray: 151; stroke-dashoffset: 151;
+    animation: draw .5s .1s var(--ease-out) forwards;
+  }
+  .success-icon path {
+    stroke: var(--primary); stroke-width: 3;
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 36; stroke-dashoffset: 36;
+    animation: draw .3s .5s var(--ease-out) forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .success-title { font-size: 18px; font-weight: 700; }
+  .success-sub { font-size: 12px; color: var(--ink-2); margin-top: 6px; line-height: 1.6; }
+  .order-no-box {
+    margin: 16px auto 0;
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 12px;
+    display: inline-flex; align-items: center; gap: 10px;
+    animation: fadeUp .35s .15s var(--ease-out) both;
+  }
+  .order-no-box .label { font-size: 12px; color: var(--ink-2); }
+  .order-no-box .no { font-size: 18px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .copy-btn {
+    background: var(--primary); color: #fff; border: none;
+    font-size: 11px; border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  }
+  .success-steps {
+    display: flex; justify-content: center;
+    margin: 22px 8px 6px;
+    animation: fadeUp .35s .25s var(--ease-out) both;
+  }
+  .step { display: flex; flex-direction: column; align-items: center; width: 90px; position: relative; }
+  .step .dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--card); border: 2px solid var(--primary);
+    color: var(--ink); font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .step .txt { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+  .step:not(:last-child)::after {
+    content: ""; position: absolute; top: 13px; left: 50%;
+    width: 100%; height: 1.5px; background: var(--line);
+  }
+  .btn-plain {
+    flex: 1; height: 44px; border-radius: 12px;
+    background: var(--primary-weak); border: none;
+    color: var(--ink-2); font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: transform .12s var(--ease-out);
+  }
+  .btn-plain:active { transform: scale(.97); }
+
+  /* toast */
+  .toast {
+    position: absolute; left: 50%; top: 45%;
+    transform: translate(-50%,-50%) scale(.9);
+    background: rgba(23,24,28,.9);
+    color: #fff; font-size: 13px;
+    padding: 12px 20px; border-radius: 12px;
+    z-index: 60; pointer-events: none;
+    opacity: 0; transition: opacity .22s, transform .22s var(--ease-out);
+    max-width: 75%; text-align: center; line-height: 1.5;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+  <!-- 统一风格的矢量图标库 -->
+  <svg width="0" height="0" style="position:absolute">
+    <symbol id="i-search" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round">
+      <circle cx="21" cy="21" r="13"/>
+      <path d="M31 31l9 9"/>
+    </symbol>
+    <symbol id="i-cart" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8h5l6 22h18l5-14H14"/>
+      <circle cx="20" cy="38" r="3.6"/>
+      <circle cx="34" cy="38" r="3.6"/>
+    </symbol>
+    <symbol id="i-order" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6h24v36l-6-4-6 4-6-4-6 4z"/>
+      <path d="M18 17h12M18 24h12"/>
+    </symbol>
+    <symbol id="i-noodle-logo" viewBox="0 0 48 48">
+      <g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+        <path d="M22 10l14-5M25 14l14-5"/>
+      </g>
+      <path d="M10 26h28c0 7-6 11-14 11s-14-4-14-11z" fill="currentColor"/>
+    </symbol>
+    <!-- 菜品图标：实心黑 + 白色细节 -->
+    <symbol id="d-bowl" viewBox="0 0 48 48">
+      <g fill="#17181c">
+        <circle cx="16" cy="23" r="4"/><circle cx="24" cy="21.5" r="4.5"/><circle cx="32" cy="23" r="4"/>
+        <path d="M8 25h32c0 9-7 14-16 14S8 34 8 25z"/>
+        <rect x="20" y="39" width="8" height="3" rx="1.5"/>
+      </g>
+      <path d="M13 30q4-2.6 7.5 0t7.5 0 7.5 0" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <g fill="none" stroke="#17181c" stroke-width="2.4" stroke-linecap="round" opacity=".4">
+        <path d="M19 13q3-3 0-6"/><path d="M27 13q3-3 0-6"/>
+      </g>
+    </symbol>
+    <symbol id="d-pork" viewBox="0 0 48 48">
+      <g fill="#17181c">
+        <rect x="9" y="17" width="13" height="13" rx="4"/>
+        <rect x="24" y="12" width="15" height="15" rx="4.5"/>
+        <rect x="17" y="26" width="14" height="13" rx="4"/>
+      </g>
+      <g stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none">
+        <path d="M13 21h5"/><path d="M29 17h5"/><path d="M21 31h6"/>
+      </g>
+      <path d="M8 42h32" stroke="#17181c" stroke-width="2.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-lobster" viewBox="0 0 48 48">
+      <path d="M24 13c-8 0-10 9-9 17 .8 6 5 9 9 9s8.2-3 9-9c1-8-1-17-9-17z" fill="#17181c"/>
+      <g stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none">
+        <path d="M17.5 22h13"/><path d="M17 28h14"/>
+      </g>
+      <g fill="none" stroke="#17181c" stroke-width="2.2" stroke-linecap="round">
+        <path d="M20 12q-4-5-8-6"/><path d="M28 12q4-5 8-6"/>
+      </g>
+    </symbol>
+    <symbol id="d-leaf" viewBox="0 0 48 48">
+      <path d="M24 40C11 37 8 21 13 11c11-2 23 4 23 15 0 8-6 12-12 14z" fill="#17181c"/>
+      <path d="M24 37c-2-8-2-17-8-24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-dumpling" viewBox="0 0 48 48">
+      <path d="M10 30c0-12 6-20 14-20s14 8 14 20q0 4-4 4H14q-4 0-4-4z" fill="#17181c"/>
+      <g stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none">
+        <path d="M16 31q1-10 6-17"/><path d="M24 31V12"/><path d="M32 31q-1-10-6-17"/>
+      </g>
+      <path d="M10 40h28" stroke="#17181c" stroke-width="2.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-ricebowl" viewBox="0 0 48 48">
+      <g fill="#17181c">
+        <circle cx="17" cy="22" r="4"/><circle cx="24" cy="20" r="4.5"/><circle cx="31" cy="22" r="4"/>
+        <path d="M8 25h32c0 9-7 14-16 14S8 34 8 25z"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="19" cy="30" r="1.5"/><circle cx="26" cy="29" r="1.5"/><circle cx="30" cy="32" r="1.5"/>
+      </g>
+    </symbol>
+    <symbol id="d-noodle" viewBox="0 0 48 48">
+      <path d="M8 25h32c0 9-7 14-16 14S8 34 8 25z" fill="#17181c"/>
+      <path d="M13 30q4-2.6 7.5 0t7.5 0" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <g fill="none" stroke="#17181c" stroke-width="2.6" stroke-linecap="round">
+        <path d="M26 8l12 8"/><path d="M30 4l12 8"/>
+      </g>
+    </symbol>
+    <symbol id="d-rice" viewBox="0 0 48 48">
+      <g fill="#17181c">
+        <circle cx="24" cy="21" r="8"/>
+        <path d="M10 25h28c0 8-6 13-14 13s-14-5-14-13z"/>
+        <rect x="19" y="38" width="10" height="3" rx="1.5"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="21" cy="19" r="1.3"/><circle cx="27" cy="22" r="1.3"/><circle cx="23" cy="23" r="1.3"/>
+      </g>
+      <g fill="none" stroke="#17181c" stroke-width="2.4" stroke-linecap="round" opacity=".4">
+        <path d="M20 9q3-3 0-6"/><path d="M28 9q3-3 0-6"/>
+      </g>
+    </symbol>
+    <symbol id="d-drumstick" viewBox="0 0 48 48">
+      <circle cx="29" cy="19" r="12.5" fill="#17181c"/>
+      <path d="M21 28l-8 8" stroke="#17181c" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="12" cy="35" r="3" fill="#17181c"/><circle cx="15" cy="40" r="3" fill="#17181c"/>
+      <path d="M23 13q6-2 10 4" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="d-soup" viewBox="0 0 48 48">
+      <g fill="#17181c">
+        <circle cx="17" cy="23" r="4"/><circle cx="25" cy="21.5" r="4.5"/><circle cx="32" cy="23" r="4"/>
+        <path d="M8 25h32c0 9-7 14-16 14S8 34 8 25z"/>
+      </g>
+      <g fill="#fff">
+        <circle cx="19" cy="29.5" r="2"/><circle cx="28" cy="31" r="2"/><circle cx="24" cy="27.5" r="2"/>
+      </g>
+      <g fill="none" stroke="#17181c" stroke-width="2.4" stroke-linecap="round" opacity=".4">
+        <path d="M21 12q3-3 0-6"/><path d="M29 12q3-3 0-6"/>
+      </g>
+    </symbol>
+    <symbol id="d-tea" viewBox="0 0 48 48">
+      <path d="M14 12h20l-3 26H17z" fill="#17181c"/>
+      <path d="M30 11l7-7" stroke="#17181c" stroke-width="2.8" stroke-linecap="round"/>
+      <circle cx="24" cy="24" r="5.5" fill="#fff"/>
+      <g stroke="#17181c" stroke-width="1.4" stroke-linecap="round">
+        <path d="M24 20.5v7"/><path d="M20.8 24h6.4"/>
+      </g>
+      <rect x="19" y="31" width="5" height="5" rx="1.2" fill="#fff"/>
+    </symbol>
+    <symbol id="d-smoothie" viewBox="0 0 48 48">
+      <path d="M14 12h20l-3 26H17z" fill="#17181c"/>
+      <path d="M30 11l7-7" stroke="#17181c" stroke-width="2.8" stroke-linecap="round"/>
+      <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+        <path d="M16 22q4-3 8 0t8 0"/><path d="M17.5 30q3.5-2.5 7 0t6 0"/>
+      </g>
+    </symbol>
+    <symbol id="d-dango" viewBox="0 0 48 48">
+      <path d="M11 40L37 10" stroke="#17181c" stroke-width="3" stroke-linecap="round"/>
+      <g fill="#17181c">
+        <circle cx="17" cy="34" r="6"/><circle cx="26" cy="24" r="6"/><circle cx="35" cy="14" r="6"/>
+      </g>
+      <g fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round">
+        <path d="M14.5 32q1-2 3-2.5"/><path d="M23.5 22q1-2 3-2.5"/><path d="M32.5 12q1-2 3-2.5"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <!-- ====== 入座页：确认桌号 + 就餐人数 ====== -->
+  <div class="entry" id="entryPage">
+    <div class="entry-top">
+      <div class="entry-logo"><svg><use href="#i-noodle-logo"/></svg></div>
+      <div class="entry-shop">灶火人家·家常菜</div>
+      <div class="entry-scan">已通过桌台二维码识别桌号</div>
+    </div>
+    <div class="entry-card">
+      <div class="entry-table-row">
+        <div>
+          <div class="entry-table-label">当前桌号</div>
+          <div class="entry-table-no" id="entryTableNo">A-05</div>
+        </div>
+        <div class="entry-table-tip">桌号已由二维码锁定<br>如有误请联系服务员</div>
+      </div>
+      <div class="entry-people-label">请选择就餐人数</div>
+      <div class="people-grid" id="peopleGrid"></div>
+    </div>
+    <button class="entry-btn" id="entryBtn" onclick="confirmEntry()">开始点餐</button>
+    <div class="entry-foot">
+      下单后请到前台结账，本单暂不支持线上支付<br>
+      如对菜品过敏或有忌口，请在点餐时填写备注
+    </div>
+  </div>
+
+  <!-- ====== 主页面 ====== -->
+  <div class="main-body" id="mainBody">
+
+  <!-- 点餐视图 -->
+  <div class="view show" id="menuView">
+
+  <!-- 顶部：门店信息 -->
+  <div class="topbar">
+    <div class="shop-row">
+      <div class="shop-logo"><svg><use href="#i-noodle-logo"/></svg></div>
+      <div>
+        <div class="shop-name" id="shopNameEl">灶火人家·家常菜</div>
+        <div class="shop-sub" id="shopSubEl">营业中 10:30 - 21:30 ｜ 扫码点餐</div>
+      </div>
+      <button class="top-order-btn" onclick="showOrders()">我的订单</button>
+    </div>
+    <div class="notice">
+      <span>本店支持扫码点餐，下单后请到前台结账；菜品图片仅供参考，口味需求请在备注中说明。</span>
+    </div>
+    <div class="search-bar" onclick="openSearch()">
+      <svg><use href="#i-search"/></svg>
+      <span class="ph">搜索菜品，如“水煮牛肉”</span>
+    </div>
+  </div>
+
+  <!-- 桌号 -->
+  <div class="table-bar">
+    <div class="table-tag" id="tableTag">A-05</div>
+    <div class="table-text"><span id="tablePeople">—</span> · 桌号已由桌台二维码锁定<br>如换桌或贴错码，请联系服务员重新扫码</div>
+  </div>
+
+  <!-- 分类 + 菜品 -->
+  <div class="main">
+    <div class="cat-nav" id="catNav"></div>
+    <div class="dish-panel" id="dishPanel"></div>
+  </div>
+
+  <!-- 购物车栏 -->
+  <div class="cart-bar">
+    <div class="cart-icon-wrap" id="cartIcon" onclick="toggleCart()">
+      <svg><use href="#i-cart"/></svg>
+      <div class="cart-badge" id="cartBadge" style="display:none">0</div>
+    </div>
+    <div class="cart-total">
+      <div class="money"><span class="yen">¥</span><span id="cartTotal">0</span></div>
+      <div class="hint" id="cartHint">未选购商品</div>
+    </div>
+    <button class="submit-btn" id="submitBtn" disabled onclick="openPreview()">提交订单</button>
+  </div>
+
+  </div><!-- /menuView -->
+
+  <!-- 我的订单视图 -->
+  <div class="view" id="ordersView">
+    <div class="topbar">
+      <div class="shop-row">
+        <button class="back-btn" onclick="showMenu()">‹</button>
+        <div style="font-size:16px;font-weight:700">我的订单</div>
+      </div>
+    </div>
+    <div class="orders-body" id="ordersBody"></div>
+  </div>
+
+  </div><!-- /main-body -->
+
+  <!-- ====== 弹层 ====== -->
+  <div class="mask" id="mask" onclick="closeAll()"></div>
+
+  <!-- 规格选择 -->
+  <div class="sheet" id="specSheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="specSheetTitle">选择规格</div>
+      <button class="close-x" onclick="closeAll()">✕</button>
+    </div>
+    <div class="sheet-body" id="specBody"></div>
+    <div class="sheet-foot">
+      <div class="price" style="font-size:20px"><span class="yen">¥</span><span id="specPrice">0</span></div>
+      <div class="stepper">
+        <button id="specMinus" class="minus-off" onclick="specStep(-1)">−</button>
+        <div class="num" id="specNum">1</div>
+        <button onclick="specStep(1)">＋</button>
+      </div>
+      <button class="btn-primary" id="specConfirm" onclick="confirmSpec(this)">加入购物车</button>
+    </div>
+  </div>
+
+  <!-- 购物车抽屉 -->
+  <div class="sheet" id="cartSheet">
+    <div class="sheet-head">
+      <div class="sheet-title">购物车 <span style="font-size:12px;color:var(--ink-3);font-weight:400">（点击规格可修改）</span></div>
+      <button class="close-x" onclick="closeAll()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="cart-list" id="cartList"></div>
+      <div class="note-block">
+        <div class="note-label"><span>整单备注</span><span style="font-size:11px;color:var(--ink-3);font-weight:400">选填</span></div>
+        <div class="quick-tags" id="quickTags"></div>
+        <textarea class="note-input" id="noteInput" placeholder="如：少辣、不要葱、儿童餐具 ×1 …" oninput="syncNote()"></textarea>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <div class="price" style="font-size:20px"><span class="yen">¥</span><span id="cartTotal2">0</span></div>
+      <button class="btn-plain" onclick="clearCart()">清空</button>
+      <button class="btn-primary" onclick="openPreview()">选好了，去下单</button>
+    </div>
+  </div>
+
+  <!-- 订单预览 -->
+  <div class="sheet" id="previewSheet">
+    <div class="sheet-head">
+      <div class="sheet-title">订单确认</div>
+      <button class="close-x" onclick="backToCart()">✕</button>
+    </div>
+    <div class="sheet-body" id="previewBody"></div>
+    <div class="sheet-foot">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--ink-2)">共 <b id="pvCount">0</b> 件 · 合计</div>
+        <div class="price" style="font-size:22px"><span class="yen">¥</span><span id="pvTotal">0</span></div>
+      </div>
+      <button class="btn-plain" style="flex:0 0 auto;padding:0 16px" onclick="backToCart()">返回</button>
+      <button class="btn-primary" onclick="submitOrder()">提交订单</button>
+    </div>
+  </div>
+
+  <!-- 订单详情 -->
+  <div class="sheet" id="orderDetailSheet">
+    <div class="sheet-head">
+      <div class="sheet-title">订单详情</div>
+      <button class="close-x" onclick="closeAll()">✕</button>
+    </div>
+    <div class="sheet-body" id="orderDetailBody"></div>
+    <div class="sheet-foot">
+      <div style="flex:1;font-size:11px;color:var(--ink-2)" id="detailStatusTip"></div>
+      <button class="btn-primary" onclick="closeAll();showOrders()">返回列表</button>
+    </div>
+  </div>
+
+  <!-- 提交成功 -->
+  <div class="sheet" id="successSheet">
+    <div class="sheet-body" style="padding-bottom: calc(env(safe-area-inset-bottom,0px) + 16px)">
+      <div class="success-card">
+        <svg class="success-icon" viewBox="0 0 52 52">
+          <circle cx="26" cy="26" r="24"/>
+          <path d="M15 27l8 8 15-16"/>
+        </svg>
+        <div class="success-title">下单成功</div>
+        <div class="success-sub">后厨已收到您的小票，请耐心等待出餐<br>用餐完毕请<b>前往前台报桌号结账</b>（本单暂不支持线上支付）</div>
+        <div class="order-no-box">
+          <span class="label">订单号</span>
+          <span class="no" id="orderNo">—</span>
+          <button class="copy-btn" onclick="copyOrderNo()">复制</button>
+        </div>
+        <div class="success-steps">
+          <div class="step"><div class="dot">1</div><div class="txt">后厨制作</div></div>
+          <div class="step"><div class="dot">2</div><div class="txt">喊号上菜</div></div>
+          <div class="step"><div class="dot">3</div><div class="txt">前台结账</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 16px calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:10px">
+      <button class="btn-plain" onclick="closeAll();showOrders()">查看订单</button>
+      <button class="btn-primary" onclick="restartOrder()">继续点餐</button>
+    </div>
+  </div>
+
+  <!-- 通用确认弹层 -->
+  <div class="sheet" id="confirmSheet">
+    <div class="sheet-head">
+      <div class="sheet-title" id="cfTitle">确认操作</div>
+      <button class="close-x" onclick="closeAll()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div style="font-size:13px;color:var(--ink-2);line-height:1.8;padding:4px 0 10px" id="cfText"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-plain" style="flex:1" onclick="closeAll()">取消</button>
+      <button class="btn-primary" style="flex:1" id="cfOkBtn" onclick="cfOk()">确认</button>
+    </div>
+  </div>
+
+  <!-- 搜索页 -->
+  <div class="search-view" id="searchView">
+    <div class="search-head">
+      <div class="search-input-wrap">
+        <svg><use href="#i-search"/></svg>
+        <input class="search-input" id="searchInput" placeholder="搜索菜品名称、口味、标签" oninput="onSearchInput(this)">
+        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+      </div>
+      <button class="search-cancel" onclick="closeSearch()">取消</button>
+    </div>
+    <div class="search-body" id="searchBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ================= 模拟数据（真实项目中来自 API） ================= */
+// 门店信息：真实项目中由 admin「系统设置 → 门店信息」配置后经接口下发
+const SHOP = { name: "灶火人家·家常菜", open: "10:30", close: "21:30" };
+const CATS = [
+  { id: "hot",    name: "热销推荐", tint: "#f6efe8" },
+  { id: "staple", name: "招牌主食", tint: "#f5f1ea" },
+  { id: "snack",  name: "小吃凉菜", tint: "#f2f0eb" },
+  { id: "soup",   name: "汤品",     tint: "#f4efe9" },
+  { id: "drink",  name: "饮品甜点", tint: "#eef1ec" },
+];
+
+const DISHES = [
+  { id:"d1", cat:"hot", name:"招牌水煮牛肉", desc:"麻辣鲜香 · 招牌必点", icon:"d-bowl",
+    price:42, origin:48, sales:"月售 326", tags:["招牌","微辣起"],
+    specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:3}]},{name:"辣度",options:[{n:"不辣",d:0},{n:"微辣",d:0},{n:"中辣",d:0},{n:"特辣",d:0}]}],
+    addons:[{n:"加宽粉",p:3,limit:1},{n:"加豆腐",p:3,limit:2},{n:"加牛肉 50g",p:9,limit:1}] },
+  { id:"d2", cat:"hot", name:"家常红烧肉", desc:"肥而不腻 · 入口即化", icon:"d-pork",
+    price:36, sales:"月售 254", tags:["本店特色"], specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:2}]}], addons:[{n:"加卤蛋",p:2,limit:2},{n:"加米饭",p:2,limit:0}] },
+  { id:"d3", cat:"hot", name:"香辣小龙虾", desc:"当季鲜活 · 现杀现烧", icon:"d-lobster",
+    price:88, sales:"月售 189", tags:["限时特惠"], specs:[{name:"份量",options:[{n:"1斤",d:0},{n:"2斤",d:76}]},{name:"辣度",options:[{n:"微辣",d:0},{n:"中辣",d:0},{n:"爆辣",d:0}]}], addons:[] },
+  { id:"d4", cat:"hot", name:"凉拌木耳", desc:"爽脆开胃", icon:"d-leaf",
+    price:14, sales:"月售 98", soldOut:true, specs:[], addons:[] },
+  { id:"d5", cat:"staple", name:"手工水饺(12只)", desc:"每日现包 · 猪肉白菜馅", icon:"d-dumpling",
+    price:22, sales:"月售 410", tags:["现包"], specs:[{name:"做法",options:[{n:"水饺",d:0},{n:"煎饺",d:3}]}], addons:[{n:"加一份(6只)",p:11,limit:1}] },
+  { id:"d6", cat:"staple", name:"扬州炒饭", desc:"粒粒分明 · 配料丰富", icon:"d-ricebowl",
+    price:18, sales:"月售 233", specs:[{name:"份量",options:[{n:"小份",d:0},{n:"大份",d:6}]}], addons:[{n:"加蛋",p:2,limit:2},{n:"加虾仁",p:6,limit:1}] },
+  { id:"d7", cat:"staple", name:"葱油拌面", desc:"秘制葱油 · 香气十足", icon:"d-noodle",
+    price:12, sales:"月售 176", specs:[{name:"辣度",options:[{n:"不辣",d:0},{n:"微辣",d:0},{n:"中辣",d:0}]}], addons:[{n:"加煎蛋",p:2,limit:2},{n:"加荷包蛋",p:3,limit:2}] },
+  { id:"d8", cat:"staple", name:"白米饭", desc:"东北长粒香米", icon:"d-rice",
+    price:2, sales:"月售 500+", specs:[], addons:[] },
+  { id:"d9", cat:"snack", name:"椒盐鸡米花", desc:"外酥里嫩", icon:"d-drumstick",
+    price:16, sales:"月售 145", specs:[{name:"辣度",options:[{n:"原味",d:0},{n:"微辣",d:0}]}], addons:[] },
+  { id:"d10", cat:"snack", name:"口水鸡", desc:"麻香入味", icon:"d-drumstick",
+    price:28, sales:"月售 88", specs:[{name:"辣度",options:[{n:"微辣",d:0},{n:"中辣",d:0}]}], addons:[] },
+  { id:"d11", cat:"soup", name:"番茄蛋花汤", desc:"酸甜开胃", icon:"d-soup",
+    price:12, sales:"月售 210", specs:[], addons:[] },
+  { id:"d12", cat:"soup", name:"筒骨玉米汤", desc:"慢火熬制 3 小时", icon:"d-soup",
+    price:22, sales:"月售 67", specs:[{name:"份量",options:[{n:"例汤",d:0},{n:"大盅",d:8}]}], addons:[] },
+  { id:"d13", cat:"drink", name:"手打柠檬茶", desc:"现捶香水柠檬", icon:"d-tea",
+    price:13, sales:"月售 302", tags:["冷饮"], specs:[{name:"温度",options:[{n:"正常冰",d:0},{n:"少冰",d:0},{n:"去冰",d:0},{n:"常温",d:0}]},{name:"糖度",options:[{n:"正常糖",d:0},{n:"半糖",d:0},{n:"无糖",d:0}]}], addons:[{n:"加小料(椰果)",p:2,limit:0}] },
+  { id:"d14", cat:"drink", name:"杨枝甘露", desc:"芒果西柚椰浆", icon:"d-smoothie",
+    price:16, sales:"月售 156", specs:[{name:"冰度",options:[{n:"正常冰",d:0},{n:"少冰",d:0},{n:"去冰",d:0}]}], addons:[] },
+  { id:"d15", cat:"drink", name:"红糖糍粑", desc:"外脆内糯", icon:"d-dango",
+    price:12, sales:"月售 92", soldOut:true, specs:[], addons:[] },
+];
+
+const QUICK_NOTES = ["少辣","不要辣","不要葱","不要香菜","多放醋","儿童餐具","打包带走"];
+
+/* ================= 状态 ================= */
+let state = {
+  table: "A-05",
+  people: 0,           // 就餐人数（入座页选择，0 为未选择）
+  cart: [],            // {uid, dishId, name, icon, tint, specText, specSel, addonSel, price, qty}
+  note: "",
+  quickSel: new Set(),
+  editingUid: null,    // 正在改规格的购物车项
+  specDish: null, specSel: [], addonSel: [], specQty: 1,
+  activeCat: "hot",
+  entered: false,      // 是否已通过入座页
+  searchKw: "",        // 当前搜索关键词
+  orders: [],          // 本桌订单列表 {no, time, items, total, note, status: pending|paid}
+};
+
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => (Math.round(n * 100) / 100).toString();
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+function openSheet(id) { $("mask").classList.add("show"); $(id).classList.add("show"); $(id)._open = true; }
+function closeAll() {
+  $("mask").classList.remove("show");
+  document.querySelectorAll(".sheet").forEach(s => { s.classList.remove("show"); s._open = false; });
+  state.editingUid = null;
+}
+function toggleCart() {
+  if ($("cartSheet")._open) return closeAll();
+  renderCartList(); openSheet("cartSheet");
+}
+// 加购飞入动画：从点击位置飞一个小圆点到购物车
+function flyToCart(fromEl) {
+  const phone = $("app").getBoundingClientRect();
+  const cart = $("cartIcon").getBoundingClientRect();
+  if (!fromEl) { bumpCart(); return; }
+  const r = fromEl.getBoundingClientRect();
+  const dot = document.createElement("div");
+  dot.className = "fly-dot";
+  dot.style.left = (r.left - phone.left + r.width / 2 - 6) + "px";
+  dot.style.top = (r.top - phone.top + r.height / 2 - 6) + "px";
+  $("app").appendChild(dot);
+  const tx = cart.left - phone.left + cart.width / 2 - (r.left - phone.left + r.width / 2);
+  const ty = cart.top - phone.top + cart.height / 2 - (r.top - phone.top + r.height / 2);
+  requestAnimationFrame(() => {
+    dot.style.transform = `translate(${tx}px, ${ty}px) scale(.35)`;
+    dot.style.opacity = ".55";
+  });
+  setTimeout(() => { dot.remove(); bumpCart(); }, 480);
+}
+function bumpCart() {
+  const el = $("cartIcon");
+  el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+}
+
+/* ================= 分类 & 菜品渲染 ================= */
+function catTint(catId) { return CATS.find(c => c.id === catId).tint; }
+function catCount(catId) {
+  return state.cart.filter(i => DISHES.find(d => d.id === i.dishId).cat === catId)
+    .reduce((s, i) => s + i.qty, 0);
+}
+function renderCats() {
+  $("catNav").innerHTML = CATS.map(c => {
+    const n = catCount(c.id);
+    return `<div class="cat-item ${c.id === state.activeCat ? "active" : ""}" data-cat="${c.id}" onclick="jumpCat('${c.id}')">
+      ${c.name}${n ? `<br><span class="badge">${n}</span>` : ""}</div>`;
+  }).join("");
+}
+function jumpCat(id) {
+  state.activeCat = id; renderCats();
+  const panel = $("dishPanel");
+  const target = panel.querySelector(`[data-sec="${id}"]`);
+  if (target) panel.scrollTo({ top: target.offsetTop - 4, behavior: "smooth" });
+}
+function renderDishes() {
+  $("dishPanel").innerHTML = CATS.map(c => {
+    const list = DISHES.filter(d => d.cat === c.id);
+    return `<div data-sec="${c.id}">
+      <div class="sec-title">${c.name}</div>
+      ${list.map(dishCardHtml).join("")}
+    </div>`;
+  }).join("");
+}
+
+// 菜品卡片公共渲染（菜单列表 & 搜索结果共用）
+function dishCardHtml(d) {
+  const hasSpec = (d.specs && d.specs.length) || (d.addons && d.addons.length);
+  return `<div class="dish-card ${d.soldOut ? "sold" : ""}">
+    <div class="dish-img" style="background:${catTint(d.cat)}">
+      <svg><use href="#${d.icon}"/></svg>
+      ${d.soldOut ? '<div class="sold-tag"><span>已售罄</span></div>' : ""}
+    </div>
+    <div class="dish-info">
+      <div class="dish-name">${d.name}</div>
+      <div class="dish-desc">${d.desc} · ${d.sales}</div>
+      ${d.tags ? `<div class="dish-tags">${d.tags.map(t => `<span class="mini-tag">${t}</span>`).join("")}</div>` : ""}
+      <div class="dish-bottom">
+        <div class="price"><span class="yen">¥</span>${fmt(d.price)}${d.origin ? `<span class="origin">¥${d.origin}</span>` : ""}</div>
+        ${d.soldOut ? "" : hasSpec
+          ? `<button class="spec-btn" onclick="openSpec('${d.id}')">选规格</button>`
+          : `<button class="add-btn" onclick="quickAdd(event,'${d.id}')">＋</button>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+// 滚动联动分类高亮
+$("dishPanel").addEventListener("scroll", () => {
+  const panel = $("dishPanel");
+  let cur = state.activeCat;
+  document.querySelectorAll("#dishPanel [data-sec]").forEach(sec => {
+    if (panel.scrollTop >= sec.offsetTop - 40) cur = sec.dataset.sec;
+  });
+  if (cur !== state.activeCat) { state.activeCat = cur; renderCats(); }
+});
+
+/* ================= 规格弹窗 ================= */
+function defaultSel(d) { return d.specs.map(g => 0); }
+function openSpec(dishId, cartUid) {
+  const d = DISHES.find(x => x.id === dishId);
+  state.specDish = d; state.specQty = 1;
+  state.editingUid = cartUid || null;
+  if (cartUid) {
+    const item = state.cart.find(i => i.uid === cartUid);
+    state.specSel = item.specSel.slice(); state.addonSel = item.addonSel.slice();
+    state.specQty = item.qty;
+    $("specSheetTitle").textContent = "修改规格";
+    $("specConfirm").textContent = "保存修改";
+  } else {
+    state.specSel = defaultSel(d); state.addonSel = [];
+    $("specSheetTitle").textContent = "选择规格";
+    $("specConfirm").textContent = "加入购物车";
+  }
+  renderSpecBody(); updateSpecPrice();
+  openSheet("specSheet");
+}
+function renderSpecBody() {
+  const d = state.specDish;
+  let html = `<div class="spec-dish">
+    <div class="dish-img" style="background:${catTint(d.cat)}"><svg><use href="#${d.icon}"/></svg></div>
+    <div><div class="n">${d.name}</div><div class="p"><span class="yen">¥</span><span id="specBase">${fmt(d.price)}</span></div></div>
+  </div>`;
+  d.specs.forEach((g, gi) => {
+    html += `<div class="group-title">${g.name}</div><div class="opt-wrap">`;
+    g.options.forEach((o, oi) => {
+      const active = state.specSel[gi] === oi;
+      const plus = o.d ? `<span class="plus">+¥${o.d}</span>` : "";
+      html += `<div class="opt ${active ? "active" : ""}" onclick="pickSpec(${gi},${oi})">${o.n}${plus}</div>`;
+    });
+    html += `</div>`;
+  });
+  if (d.addons && d.addons.length) {
+    html += `<div class="group-title">加料（可多选）</div><div class="addon-list">`;
+    d.addons.forEach((a, ai) => {
+      const cnt = state.addonSel.filter(i => i === ai).length;
+      const multi = (a.limit || 0) >= 2;
+      const limitTag = a.limit ? `<span class="addon-limit">限${a.limit}份</span>` : "";
+      const ctrl = multi
+        ? `<div class="addon-stepper" onclick="event.stopPropagation()">
+             <button class="${cnt ? "" : "off"}" onclick="addonStep(${ai},-1)">−</button>
+             <span class="num">${cnt}</span>
+             <button class="${cnt >= a.limit ? "off" : ""}" onclick="addonStep(${ai},1)">＋</button>
+           </div>`
+        : `<div class="checkbox">${cnt ? "✓" : ""}</div>`;
+      html += `<div class="addon-row ${cnt ? "on" : ""}" ${multi ? "" : `onclick="pickAddon(${ai})"`}>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="checkbox ${cnt ? "on" : ""}" style="${multi && !cnt ? "opacity:.45" : ""}">✓</div>
+          <div><div class="addon-name">${a.n}${limitTag}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="addon-price">+¥${fmt(a.p)}</div>
+          ${ctrl}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  $("specBody").innerHTML = html;
+}
+function pickSpec(gi, oi) {
+  state.specSel[gi] = oi;
+  renderSpecBody(); updateSpecPrice();
+}
+function pickAddon(ai) {
+  const arr = state.addonSel;
+  const i = arr.indexOf(ai);
+  i >= 0 ? arr.splice(i, 1) : arr.push(ai);
+  renderSpecBody(); updateSpecPrice();
+}
+// 限选数量 >= 2 的加料：步进增减（后台「限N份」配置生效）
+function addonStep(ai, delta) {
+  const a = state.specDish.addons[ai];
+  const arr = state.addonSel;
+  const cnt = arr.filter(i => i === ai).length;
+  const next = cnt + delta;
+  if (next < 0 || next > (a.limit || 0)) { if (next > (a.limit || 0)) toast(`「${a.n}」每单限选 ${a.limit} 份`); return; }
+  if (delta > 0) arr.push(ai); else arr.splice(arr.indexOf(ai), 1);
+  renderSpecBody(); updateSpecPrice();
+}
+function calcSpecPrice() {
+  const d = state.specDish;
+  let p = d.price;
+  d.specs.forEach((g, gi) => p += g.options[state.specSel[gi]].d);
+  state.addonSel.forEach(ai => p += d.addons[ai].p);
+  return p;
+}
+function updateSpecPrice() { $("specPrice").textContent = fmt(calcSpecPrice()); }
+function specStep(n) {
+  state.specQty = Math.max(1, Math.min(99, state.specQty + n));
+  $("specNum").textContent = state.specQty;
+  $("specMinus").classList.toggle("minus-off", state.specQty <= 1);
+}
+function confirmSpec(btn) {
+  const d = state.specDish;
+  const specText = d.specs.map((g, gi) => g.options[state.specSel[gi]].n).join("/");
+  const addonText = [...new Set(state.addonSel)].map(ai => {
+    const cnt = state.addonSel.filter(i => i === ai).length;
+    return d.addons[ai].n + (cnt > 1 ? "×" + cnt : "");
+  }).join("+");
+  const full = [specText, addonText].filter(Boolean).join(" · ") || "默认";
+  if (state.editingUid) {
+    const item = state.cart.find(i => i.uid === state.editingUid);
+    Object.assign(item, { specSel: state.specSel.slice(), addonSel: state.addonSel.slice(), specText: full, price: calcSpecPrice(), qty: state.specQty });
+    toast("规格已更新");
+  } else {
+    // 相同菜品+相同规格合并
+    const exist = state.cart.find(i => i.dishId === d.id && i.specText === full);
+    if (exist) exist.qty += state.specQty;
+    else state.cart.push({
+      uid: Date.now() + Math.random(), dishId: d.id, name: d.name, icon: d.icon, tint: catTint(d.cat),
+      specText: full, specSel: state.specSel.slice(), addonSel: state.addonSel.slice(),
+      price: calcSpecPrice(), qty: state.specQty,
+    });
+    flyToCart(btn);
+  }
+  closeAll(); refresh();
+}
+function quickAdd(ev, dishId) {
+  const d = DISHES.find(x => x.id === dishId);
+  const exist = state.cart.find(i => i.dishId === dishId && i.specText === "默认");
+  if (exist) exist.qty += 1;
+  else state.cart.push({ uid: Date.now() + Math.random(), dishId: dishId, name: d.name, icon: d.icon, tint: catTint(d.cat), specText: "默认", specSel: [], addonSel: [], price: d.price, qty: 1 });
+  flyToCart(ev && ev.currentTarget);
+  refresh();
+  toast(`已加入「${d.name}」`);
+}
+
+/* ================= 购物车 ================= */
+function cartCount() { return state.cart.reduce((s, i) => s + i.qty, 0); }
+function cartTotal() { return state.cart.reduce((s, i) => s + i.price * i.qty, 0); }
+function refresh() {
+  const n = cartCount(), total = cartTotal();
+  $("cartBadge").style.display = n ? "flex" : "none";
+  $("cartBadge").textContent = n;
+  $("cartTotal").textContent = fmt(total);
+  $("cartTotal2").textContent = fmt(total);
+  $("cartHint").textContent = n ? `共 ${n} 件 · 请到前台结账` : "未选购商品";
+  $("submitBtn").disabled = !n;
+  renderCats();
+}
+function renderCartList() {
+  if (!state.cart.length) {
+    $("cartList").innerHTML = `<div class="empty-cart"><svg><use href="#i-cart"/></svg>购物车还是空的<br>去挑几道菜吧</div>`;
+    return;
+  }
+  $("cartList").innerHTML = state.cart.map(i => `
+    <div class="cart-row">
+      <div class="dish-img" style="width:44px;height:44px;background:${i.tint};border-radius:9px;flex-shrink:0">
+        <svg style="width:26px;height:26px"><use href="#${i.icon}"/></svg>
+      </div>
+      <div class="cart-info">
+        <div class="cart-name">${i.name}</div>
+        <div class="cart-spec editable" onclick="openSpec('${i.dishId}', ${JSON.stringify(i.uid).replace(/"/g, "&quot;")})">
+          ${i.specText} ✎
+        </div>
+      </div>
+      <div class="cart-right">
+        <div class="cart-price"><span class="yen">¥</span>${fmt(i.price * i.qty)}</div>
+        <div class="stepper" style="margin-top:6px">
+          <button class="${i.qty <= 1 ? "minus-off" : ""}" onclick="cartStep(${JSON.stringify(i.uid).replace(/"/g, "&quot;")},-1)">−</button>
+          <div class="num">${i.qty}</div>
+          <button onclick="cartStep(${JSON.stringify(i.uid).replace(/"/g, "&quot;")},1)">＋</button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+function cartStep(uid, n) {
+  const idx = state.cart.findIndex(i => String(i.uid) === String(uid));
+  if (idx < 0) return;
+  state.cart[idx].qty += n;
+  if (state.cart[idx].qty <= 0) state.cart.splice(idx, 1);
+  renderCartList(); refresh();
+}
+/* ================= 通用确认弹层（替代原生 confirm） ================= */
+let _cfCb = null;
+function showConfirm(title, text, cb, okTxt = "确认") {
+  $("cfTitle").textContent = title;
+  $("cfText").textContent = text;
+  $("cfOkBtn").textContent = okTxt;
+  _cfCb = cb;
+  openSheet("confirmSheet");
+}
+function cfOk() { const cb = _cfCb; _cfCb = null; closeAll(); cb && cb(); }
+
+function clearCart() {
+  if (!state.cart.length) return;
+  showConfirm("清空购物车", "确定清空购物车中的全部菜品吗？清空后需要重新选购。", () => {
+    state.cart = []; renderCartList(); refresh();
+    toast("购物车已清空");
+  }, "清空");
+}
+
+/* ================= 备注 ================= */
+function renderQuickTags() {
+  $("quickTags").innerHTML = QUICK_NOTES.map(t =>
+    `<span class="quick-tag ${state.quickSel.has(t) ? "on" : ""}" onclick="toggleQuick('${t}')">${t}</span>`).join("");
+}
+function toggleQuick(t) {
+  state.quickSel.has(t) ? state.quickSel.delete(t) : state.quickSel.add(t);
+  renderQuickTags(); syncNote();
+}
+function syncNote() {
+  const extra = $("noteInput").value.trim();
+  state.note = [...state.quickSel, extra].filter(Boolean).join("；");
+}
+function openCartAndSync() { renderQuickTags(); renderCartList(); openSheet("cartSheet"); }
+
+/* ================= 订单预览 & 提交 ================= */
+function openPreview() {
+  if (!state.cart.length) { toast("购物车为空，请先选购菜品"); return; }
+  syncNote(); closeAll();
+  $("previewBody").innerHTML = `
+    <div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">桌号 <b style="color:var(--ink)">${state.table}</b> · 就餐人数 <b style="color:var(--ink)">${state.people || "—"} 人</b> · 就餐方式 <b style="color:var(--ink)">堂食</b></div>
+    ${state.cart.map(i => `
+      <div class="cart-row">
+        <div class="cart-info">
+          <div class="cart-name">${i.name}</div>
+          <div class="cart-spec" style="cursor:default">${i.specText}</div>
+        </div>
+        <div class="cart-right">
+          <div class="cart-price"><span class="yen">¥</span>${fmt(i.price * i.qty)}</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px">× ${i.qty}</div>
+        </div>
+      </div>`).join("")}
+    <div style="background:var(--bg);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink-2);margin-top:10px">
+      提交后订单进入<b style="color:var(--ink)">待结算</b>状态，后厨开始制作；<b style="color:var(--ink)">本单不包含在线支付</b>，用餐完毕请到前台结账。
+    </div>
+    ${state.note ? `<div style="font-size:12px;color:var(--ink-2);margin-top:10px">整单备注：<span style="color:var(--ink)">${state.note}</span></div>` : ""}
+  `;
+  $("pvCount").textContent = cartCount();
+  $("pvTotal").textContent = fmt(cartTotal());
+  openSheet("previewSheet");
+}
+function backToCart() { closeAll(); setTimeout(openCartAndSync, 160); }
+function genOrderNo() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${String(Math.floor(Math.random() * 900) + 100)}`;
+}
+function formatTime(d) {
+  const p = n => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function submitOrder() {
+  if (!state.cart.length) { toast("购物车为空，禁止提交"); return; }
+  const no = genOrderNo();
+  // 记录订单（真实场景：POST /api/orders 提交 → 后端打印后厨小票 → 状态由收银端流转）
+  state.orders.unshift({
+    no,
+    time: formatTime(new Date()),
+    items: state.cart.map(i => ({ name: i.name, specText: i.specText, price: i.price, qty: i.qty })),
+    total: cartTotal(),
+    note: state.note,
+    status: "pending",
+  });
+  $("orderNo").textContent = no;
+  closeAll();
+  setTimeout(() => openSheet("successSheet"), 160);
+}
+
+/* ================= 我的订单 ================= */
+function showOrders() { renderOrders(); $("menuView").classList.remove("show"); $("ordersView").classList.add("show"); }
+function showMenu() { $("ordersView").classList.remove("show"); $("menuView").classList.add("show"); }
+function orderStatusText(o) { return o.status === "pending" ? "待结算" : "已结清"; }
+function renderOrders() {
+  if (!state.orders.length) {
+    $("ordersBody").innerHTML = `<div class="orders-empty"><svg><use href="#i-order"/></svg>本桌还没有订单<br>返回去挑几道菜吧</div>`;
+    return;
+  }
+  $("ordersBody").innerHTML = state.orders.map((o, idx) => {
+    const preview = o.items.slice(0, 2).map(i => `${i.name}×${i.qty}`).join("、");
+    const more = o.items.length > 2 ? ` 等 ${o.items.length} 件商品` : "";
+    return `<div class="order-card" style="animation-delay:${idx * 0.04}s" onclick="openOrderDetail(${idx})">
+      <div class="order-card-head">
+        <div>
+          <div class="order-card-no">NO.${o.no}</div>
+          <div class="order-card-time">${o.time} · 桌号 ${state.table} · ${o.items.reduce((s, i) => s + i.qty, 0)} 件</div>
+        </div>
+        <span class="status-chip ${o.status}">${orderStatusText(o)}</span>
+      </div>
+      <div class="order-card-items">${preview}${more}</div>
+      <div class="order-card-foot">
+        <span class="order-card-more">${o.note ? "备注：" + o.note : "点击查看明细 ›"}</span>
+        <div class="cart-price"><span class="yen">¥</span>${fmt(o.total)}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function openOrderDetail(idx) {
+  const o = state.orders[idx];
+  $("orderDetailBody").innerHTML = `
+    <div style="font-size:12px;color:var(--ink-2);margin-bottom:8px">
+      订单号 <b style="color:var(--ink)">NO.${o.no}</b><br>下单时间 ${o.time} · 桌号 ${state.table} · 就餐方式 堂食
+    </div>
+    ${o.items.map(i => `
+      <div class="cart-row">
+        <div class="cart-info">
+          <div class="cart-name">${i.name}</div>
+          <div class="cart-spec" style="cursor:default">${i.specText}</div>
+        </div>
+        <div class="cart-right">
+          <div class="cart-price"><span class="yen">¥</span>${fmt(i.price * i.qty)}</div>
+          <div style="font-size:11px;color:var(--ink-3);margin-top:4px">× ${i.qty}</div>
+        </div>
+      </div>`).join("")}
+    ${o.note ? `<div style="font-size:12px;color:var(--ink-2);margin-top:10px">整单备注：<span style="color:var(--ink)">${o.note}</span></div>` : ""}
+    <div style="display:flex;justify-content:flex-end;gap:6px;align-items:baseline;margin-top:14px;font-size:12px;color:var(--ink-2)">
+      合计 <span class="price" style="font-size:20px"><span class="yen">¥</span>${fmt(o.total)}</span>
+    </div>
+  `;
+  $("detailStatusTip").innerHTML = o.status === "pending"
+    ? "当前状态：<b style='color:var(--ink)'>待结算</b>，用餐完毕请到前台结账"
+    : "当前状态：<b style='color:var(--ink)'>已结清</b>，欢迎再次光临";
+  openSheet("orderDetailSheet");
+}
+function copyOrderNo() {
+  const no = $("orderNo").textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(no).catch(() => {});
+  toast("订单号已复制：" + no);
+}
+function restartOrder() {
+  state.cart = []; state.note = ""; state.quickSel.clear();
+  $("noteInput").value = ""; renderQuickTags();
+  refresh(); closeAll();
+  toast("已清空，可继续点餐（同桌追加请告知前台）");
+}
+
+/* ================= 搜索 ================= */
+const HOT_WORDS = ["水煮牛肉", "红烧肉", "小龙虾", "水饺", "柠檬茶", "炒饭", "汤", "辣"];
+const escHtml = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function openSearch() {
+  $("searchView").classList.add("show");
+  renderSearch();
+  setTimeout(() => $("searchInput").focus(), 240);
+}
+function closeSearch() {
+  $("searchView").classList.remove("show");
+  clearSearch(true);
+}
+function clearSearch(silent) {
+  state.searchKw = "";
+  $("searchInput").value = "";
+  renderSearch();
+  if (silent !== true) $("searchInput").focus();
+}
+function onSearchInput(el) {
+  state.searchKw = el.value.trim();
+  renderSearch();
+}
+function tapHotWord(w) {
+  state.searchKw = w;
+  $("searchInput").value = w;
+  renderSearch();
+  $("searchInput").focus();
+}
+// 匹配：菜品名 / 描述 / 标签 / 所属分类名
+function searchMatch(d, kw) {
+  const catName = CATS.find(c => c.id === d.cat)?.name || "";
+  return [d.name, d.desc, ...(d.tags || []), catName].some(t => t.includes(kw));
+}
+// 关键词高亮（仅在菜品名上标记，其他字段保持简洁）
+function markKw(text, kw) {
+  const t = escHtml(text);
+  if (!kw) return t;
+  const k = escHtml(kw);
+  const idx = text.indexOf(kw);
+  if (idx < 0) return t;
+  const esc = escHtml;
+  return esc(text.slice(0, idx)) + `<span class="kw-mark">${esc(kw)}</span>` + esc(text.slice(idx + kw.length));
+}
+function renderSearch() {
+  const kw = state.searchKw;
+  $("searchClear").classList.toggle("show", !!$("searchInput").value);
+  const body = $("searchBody");
+  if (!kw) {
+    body.innerHTML = `
+      <div class="search-sec-label">热门搜索</div>
+      <div class="hot-chips">${HOT_WORDS.map(w => `<span class="hot-chip" onclick="tapHotWord('${w}')">${w}</span>`).join("")}</div>`;
+    return;
+  }
+  const list = DISHES.filter(d => searchMatch(d, kw));
+  if (!list.length) {
+    body.innerHTML = `
+      <div class="search-empty"><svg><use href="#i-search"/></svg>没有找到与「${escHtml(kw)}」相关的菜品<br>换个关键词试试，或联系服务员推荐</div>`;
+    return;
+  }
+  body.innerHTML = `
+    <div class="search-count">找到 ${list.length} 个与「${escHtml(kw)}」相关的菜品</div>
+    ${list.map(d => {
+      // 搜索结果卡片复用菜单卡片，仅名称做关键词高亮
+      const html = dishCardHtml(d);
+      return html.replace(
+        `<div class="dish-name">${d.name}</div>`,
+        `<div class="dish-name">${markKw(d.name, kw)}</div>`
+      );
+    }).join("")}`;
+}
+
+/* ================= 入座页 ================= */
+function renderPeople() {
+  const opts = [1, 2, 3, 4, 5, 6, 7, 8, "9+"];
+  $("peopleGrid").innerHTML = opts.map(v => {
+    const label = v === "9+" ? "9人+" : `${v}人`;
+    return `<div class="p-opt ${state.people === v ? "active" : ""}" data-v="${v}" onclick="pickPeople('${v}')">${label}</div>`;
+  }).join("");
+}
+function pickPeople(v) {
+  state.people = (v === "9+") ? "9+" : Number(v);
+  $("peopleGrid").querySelectorAll(".p-opt").forEach(el =>
+    el.classList.toggle("active", String(el.dataset.v) === String(v)));
+}
+function confirmEntry() {
+  if (!state.people) { toast("请先选择就餐人数"); return; }
+  state.entered = true;
+  $("entryPage").classList.add("hide");
+  $("mainBody").classList.add("show");
+  $("tableTag").textContent = state.table;
+  $("tablePeople").textContent = `${state.people} 人就餐`;
+  toast(`欢迎光临，${state.table} 桌 · ${state.people} 位`);
+}
+
+/* ================= 初始化 ================= */
+$("shopNameEl").textContent = SHOP.name;
+$("shopSubEl").textContent = `营业中 ${SHOP.open} - ${SHOP.close} ｜ 扫码点餐`;
+renderPeople(); renderCats(); renderDishes(); renderQuickTags(); refresh();
+// 主页面初始隐藏，需先在入座页确认桌号并选择人数
+$("mainBody").classList.remove("show");
+$("entryTableNo").textContent = state.table;
+
+// 演示用历史订单（已结清），真实场景由接口返回本桌订单
+state.orders.push({
+  no: "202611271012" + String(Math.floor(Math.random() * 900) + 100),
+  time: "11-27 10:12",
+  items: [
+    { name: "白米饭", specText: "默认", price: 2, qty: 2 },
+    { name: "番茄蛋花汤", specText: "默认", price: 12, qty: 1 },
+  ],
+  total: 16,
+  note: "",
+  status: "paid",
+});
+</script>
+</body>
+</html>
