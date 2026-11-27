@@ -8,6 +8,7 @@ import type {
   LiveTableStatus,
   Order,
   OrderListItem,
+  OrderListResult,
   PayMethod,
   TableCard,
 } from '@dinebox/types';
@@ -19,6 +20,7 @@ import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/store/confirm';
 import { useToast } from '@/lib/store/toast';
 import { EmptyState, LoadingRows } from '@/components/feedback';
+import { Pagination } from '@/components/pagination';
 import { ModifyModal } from '@/components/cashier/modify-modal';
 import { OrderDetailModal } from '@/components/cashier/order-detail-modal';
 import { ReturnModal } from '@/components/cashier/return-modal';
@@ -93,7 +95,8 @@ export function CashierPage() {
   const [selectedTableId, setSelectedTableId] = useState<number | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [searchKw, setSearchKw] = useState('');
-  const [searchResults, setSearchResults] = useState<OrderListItem[] | null>(null);
+  const [activeKeyword, setActiveKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState<OrderListResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [detailOrderId, setDetailOrderId] = useState<number | null>(null);
   const [modifyOpen, setModifyOpen] = useState(false);
@@ -190,23 +193,34 @@ export function CashierPage() {
     setSelectedOrderId(table.orders[0]?.id ?? null);
   };
 
-  const runSearch = async (): Promise<void> => {
-    const term = searchKw.trim();
+  const loadSearch = async (term: string, page: number): Promise<void> => {
     if (!term) {
       setSearchResults(null);
+      setActiveKeyword('');
       return;
     }
     setSearching(true);
     try {
-      const result = await adminFetch<OrderListItem[]>(
-        `/cashier/search?kw=${encodeURIComponent(term)}`,
+      const result = await adminFetch<OrderListResult>(
+        `/cashier/search?kw=${encodeURIComponent(term)}&page=${page}&pageSize=8`,
       );
       setSearchResults(result);
+      setActiveKeyword(term);
     } catch (error) {
       toast(error instanceof Error ? error.message : '检索失败', 'error');
     } finally {
       setSearching(false);
     }
+  };
+
+  const runSearch = (): void => {
+    const term = searchKw.trim();
+    if (!term) {
+      setSearchResults(null);
+      setActiveKeyword('');
+      return;
+    }
+    void loadSearch(term, 1);
   };
 
   const locateOrder = (row: OrderListItem): void => {
@@ -317,6 +331,7 @@ export function CashierPage() {
               className="btn"
               onClick={() => {
                 setSearchKw('');
+                setActiveKeyword('');
                 setSearchResults(null);
               }}
             >
@@ -328,12 +343,15 @@ export function CashierPage() {
             <div className="card search-result">
               <div className="card-title">
                 检索结果
-                <span className="sub">共 {searchResults.length} 条 · 点击定位待结算订单</span>
+                <span className="sub">
+                  共 {searchResults.total} 条 · 第 {searchResults.page}/{searchResults.totalPages} 页 ·
+                  点击定位待结算订单
+                </span>
                 <button type="button" className="btn sm" onClick={() => setSearchResults(null)}>
                   收起
                 </button>
               </div>
-              {searchResults.length === 0 ? (
+              {searchResults.list.length === 0 ? (
                 <div className="page-empty" style={{ padding: '24px 0' }}>
                   没有找到匹配的订单
                 </div>
@@ -350,7 +368,7 @@ export function CashierPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {searchResults.map((row) => (
+                    {searchResults.list.map((row) => (
                       <tr key={row.id} className="rowlink" onClick={() => locateOrder(row)}>
                         <td className="num">{row.orderNo}</td>
                         <td>{row.tableName}</td>
@@ -388,6 +406,13 @@ export function CashierPage() {
                   </tbody>
                 </table>
               )}
+              <Pagination
+                page={searchResults.page}
+                totalPages={searchResults.totalPages}
+                total={searchResults.total}
+                pageSize={searchResults.pageSize}
+                onChange={(page) => void loadSearch(activeKeyword, page)}
+              />
             </div>
           ) : null}
 

@@ -79,6 +79,8 @@ export const settleSchema = z.object({
 
 export const cashierSearchSchema = z.object({
   kw: z.string().trim().min(1).max(32),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(8),
 });
 
 /* ========================= 菜品 / 加料 / 分类 ========================= */

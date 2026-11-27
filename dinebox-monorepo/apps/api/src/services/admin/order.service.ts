@@ -220,10 +220,13 @@ export async function listOrders(query: OrderListQuery): Promise<OrderListResult
   };
 }
 
-/** 收银台检索：按订单号 / 桌号模糊匹配，返回最近 20 条。 */
-export async function searchOrders(keyword: string): Promise<OrderListItem[]> {
-  const result = await listOrders({ kw: keyword, range: 'all', page: 1, pageSize: 20 });
-  return result.list;
+/** 收银台检索：按订单号 / 桌号模糊匹配，返回分页结果。 */
+export async function searchOrders(
+  keyword: string,
+  page = 1,
+  pageSize = 8,
+): Promise<OrderListResult> {
+  return listOrders({ kw: keyword, range: 'all', page, pageSize });
 }
 
 /** 导出 Excel（对账）：按当前筛选条件导出，最多 5000 条。 */

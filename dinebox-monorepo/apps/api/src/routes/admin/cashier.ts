@@ -62,8 +62,8 @@ const searchRoute = createRoute({
 router.openapi(
   searchRoute,
   routeHandler(searchRoute, async (c) => {
-    const { kw } = c.req.valid('query');
-    return cashierController.search(c, kw);
+    const { kw, page, pageSize } = c.req.valid('query');
+    return cashierController.search(c, kw, page, pageSize);
   }),
 );
 

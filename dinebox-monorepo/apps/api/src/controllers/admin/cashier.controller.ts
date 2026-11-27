@@ -34,8 +34,8 @@ export async function orderDetail(c: AppContext, id: number) {
   return success(c, await getOrder(id));
 }
 
-export async function search(c: AppContext, keyword: string) {
-  return success(c, await searchOrders(keyword));
+export async function search(c: AppContext, keyword: string, page: number, pageSize: number) {
+  return success(c, await searchOrders(keyword, page, pageSize));
 }
 
 export async function modify(c: AppContext, id: number, input: ModifyOrderInput) {

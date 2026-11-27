@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { RefreshCw } from 'lucide-react';
 
-import type { PaymentRow, ReportData, ReportRange } from '@dinebox/types';
+import type { HourPoint, PaymentRow, ReportData, ReportRange, TrendPoint } from '@dinebox/types';
 import { PAY_METHOD_LABELS } from '@dinebox/types';
 import { formatMoney, formatPercent, todayString } from '@dinebox/utils';
 
@@ -47,6 +47,14 @@ export function ReportsPage() {
   const { shop } = useAuth();
   const [range, setRange] = useState<ReportRange>('today');
   const [trendRange, setTrendRange] = useState<7 | 30>(7);
+  const [hoveredHour, setHoveredHour] = useState<{
+    index: number;
+    point: HourPoint;
+  } | null>(null);
+  const [hoveredTrend, setHoveredTrend] = useState<{
+    index: number;
+    point: TrendPoint;
+  } | null>(null);
 
   const query = buildQuery({ range, trendRange });
   const { data, error, isLoading, mutate } = useSWR<ReportData>(
@@ -54,6 +62,11 @@ export function ReportsPage() {
     () => adminFetch<ReportData>(`/reports${query}`),
     { keepPreviousData: true, revalidateOnFocus: false },
   );
+
+  useEffect(() => {
+    setHoveredHour(null);
+    setHoveredTrend(null);
+  }, [data?.from, data?.to, trendRange]);
 
   const hours = useMemo(
     () => hourRange(shop?.openTime ?? '10:00', shop?.closeTime ?? '22:00'),
@@ -179,17 +192,58 @@ export function ReportsPage() {
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'stretch' }}>
-        <div className="card" style={{ flex: 1.35, minWidth: 0 }}>
+        <div className="card chart-card" style={{ flex: 1.35, minWidth: 0 }}>
           <div className="card-title">
             时段营收分布
             <span className="sub">
-              {data.from.slice(5)} ~ {data.to.slice(5)} · 按结账小时
+              {data.from.slice(5)} ~ {data.to.slice(5)} · 按结账小时 · 悬浮查看明细
             </span>
           </div>
-          <div className="bar-row">
-            {hourly.map((point) => (
-              <div className="bar-col" key={point.hour} title={`${point.label} ¥${formatMoney(point.revenue)}`}>
-                <span className="val" style={{ visibility: point.revenue === hourlyMax && point.revenue > 0 ? 'visible' : 'hidden' }}>
+          <div
+            className={`bar-row ${hoveredHour ? 'has-hover' : ''}`}
+            onMouseLeave={() => setHoveredHour(null)}
+          >
+            {hoveredHour ? (
+              <div
+                className="chart-tip"
+                style={{
+                  left: `${Math.min(
+                    92,
+                    Math.max(
+                      8,
+                      ((hoveredHour.index + 0.5) / Math.max(1, hourly.length)) * 100,
+                    ),
+                  )}%`,
+                }}
+              >
+                <b>
+                  {hoveredHour.point.label} -{' '}
+                  {String((hoveredHour.point.hour + 1) % 24).padStart(2, '0')}:00
+                </b>
+                <span>
+                  营收 ¥{formatMoney(hoveredHour.point.revenue)} ·{' '}
+                  {hoveredHour.point.orderCount} 单
+                </span>
+              </div>
+            ) : null}
+            {hourly.map((point, index) => (
+              <div
+                className={`bar-col ${hoveredHour?.index === index ? 'is-hover' : ''}`}
+                key={point.hour}
+                tabIndex={0}
+                role="img"
+                aria-label={`${point.label} 营收 ${formatMoney(point.revenue)} 元，${point.orderCount} 单`}
+                onMouseEnter={() => setHoveredHour({ index, point })}
+                onFocus={() => setHoveredHour({ index, point })}
+                onBlur={() => setHoveredHour(null)}
+              >
+                <span
+                  className="val"
+                  style={{
+                    visibility:
+                      point.revenue === hourlyMax && point.revenue > 0 ? 'visible' : 'hidden',
+                  }}
+                >
                   ¥{formatMoney(point.revenue)}
                 </span>
                 <div
@@ -213,7 +267,7 @@ export function ReportsPage() {
           ) : null}
         </div>
 
-        <div className="card" style={{ flex: 1, minWidth: 0 }}>
+        <div className="card chart-card" style={{ flex: 1, minWidth: 0 }}>
           <div className="card-title" style={{ flexWrap: 'wrap', gap: 8 }}>
             <span>营收趋势</span>
             <div className="seg">
@@ -233,10 +287,35 @@ export function ReportsPage() {
               </button>
             </div>
             <span className="sub" style={{ marginLeft: 'auto' }}>
-              独立窗口，不随页面口径联动
+              独立窗口 · 悬浮查看明细
             </span>
           </div>
-          <div className={`bar-row ${trendRange === 30 ? 'compact' : ''}`}>
+          <div
+            className={`bar-row ${trendRange === 30 ? 'compact' : ''} ${
+              hoveredTrend ? 'has-hover' : ''
+            }`}
+            onMouseLeave={() => setHoveredTrend(null)}
+          >
+            {hoveredTrend ? (
+              <div
+                className="chart-tip"
+                style={{
+                  left: `${Math.min(
+                    92,
+                    Math.max(
+                      8,
+                      ((hoveredTrend.index + 0.5) / Math.max(1, trend.length)) * 100,
+                    ),
+                  )}%`,
+                }}
+              >
+                <b>{hoveredTrend.point.date}</b>
+                <span>
+                  营收 ¥{formatMoney(hoveredTrend.point.revenue)} ·{' '}
+                  {hoveredTrend.point.orderCount} 单
+                </span>
+              </div>
+            ) : null}
             {trend.map((point, index) => {
               const isToday = point.date === todayString();
               const isMax = point.revenue === trendMax && point.revenue > 0;
@@ -244,13 +323,25 @@ export function ReportsPage() {
                 trendRange === 7 || index % 5 === 0 || index === trend.length - 1;
               return (
                 <div
-                  className="bar-col"
+                  className={`bar-col ${
+                    hoveredTrend?.index === index ? 'is-hover' : ''
+                  } ${point.revenue === 0 ? 'is-zero' : ''}`}
                   key={point.date}
-                  title={`${point.date} ¥${formatMoney(point.revenue)} · ${point.orderCount} 单`}
+                  tabIndex={0}
+                  role="img"
+                  aria-label={`${point.date} 营收 ${formatMoney(point.revenue)} 元，${point.orderCount} 单`}
+                  onMouseEnter={() => setHoveredTrend({ index, point })}
+                  onFocus={() => setHoveredTrend({ index, point })}
+                  onBlur={() => setHoveredTrend(null)}
                 >
-                  <span className="val" style={{ visibility: isMax || isToday ? 'visible' : 'hidden' }}>
-                    {formatMoney(point.revenue)}
-                  </span>
+                  {trendRange === 7 ? (
+                    <span
+                      className="val"
+                      style={{ visibility: isMax || isToday ? 'visible' : 'hidden' }}
+                    >
+                      {formatMoney(point.revenue)}
+                    </span>
+                  ) : null}
                   <div
                     className="bar"
                     style={{
@@ -260,7 +351,6 @@ export function ReportsPage() {
                         : isMax
                           ? 'var(--ink)'
                           : 'var(--primary)',
-                      opacity: point.revenue === 0 ? 0.22 : 1,
                     }}
                   />
                   <span className="lbl">{showLabel ? point.label : ''}</span>

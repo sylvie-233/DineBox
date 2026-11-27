@@ -991,3 +991,115 @@ button.table-card .amount, button.table-card .tno { font-variant-numeric: tabula
   display: block;
   flex-shrink: 0;
 }
+
+/* 报表图表：固定标签高度保证柱底对齐 + 悬浮高亮与明细提示 */
+.bar-row {
+  position: relative;
+  overflow: visible;
+  padding-top: 2px;
+}
+.bar-col {
+  cursor: default;
+  outline: none;
+}
+.bar-col .bar {
+  transition: height 0.4s var(--ease), opacity 0.15s, filter 0.15s, box-shadow 0.15s;
+}
+.bar-col .val {
+  display: block;
+  height: 15px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+.bar-col .lbl {
+  display: block;
+  height: 15px;
+  line-height: 15px;
+  white-space: nowrap;
+}
+.bar-row.compact {
+  gap: 3px;
+}
+.bar-row.compact .bar-col .lbl {
+  height: 13px;
+  line-height: 13px;
+}
+.bar-row.has-hover .bar-col:not(.is-hover) .bar {
+  opacity: 0.38;
+}
+.bar-row.has-hover .bar-col.is-zero:not(.is-hover) .bar {
+  opacity: 0.16;
+}
+.bar-col.is-zero .bar {
+  opacity: 0.22;
+}
+.bar-col.is-hover .bar {
+  filter: brightness(0.9);
+  box-shadow: 0 0 0 2px rgba(23, 24, 28, 0.1);
+}
+.bar-col.is-zero.is-hover .bar {
+  opacity: 0.55;
+}
+.bar-col.is-hover .val {
+  visibility: visible !important;
+}
+.bar-col.is-hover .lbl {
+  color: var(--ink);
+  font-weight: 600;
+}
+.bar-col:focus-visible .bar {
+  outline: 2px solid rgba(23, 24, 28, 0.3);
+  outline-offset: 2px;
+}
+.chart-card {
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.chart-card:hover {
+  border-color: #dfe3e8;
+  box-shadow: 0 10px 28px rgba(23, 24, 28, 0.07);
+}
+.chart-tip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  z-index: 6;
+  pointer-events: none;
+  background: rgba(23, 24, 28, 0.94);
+  color: #fff;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  animation: fadeUp 0.15s var(--ease);
+}
+.chart-tip b {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+.chart-tip span {
+  color: rgba(255, 255, 255, 0.78);
+}
+.chart-tip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  border-width: 5px 5px 0;
+  border-style: solid;
+  border-color: rgba(23, 24, 28, 0.94) transparent transparent;
+}
+
+/* 收银台检索栏与筛选栏保持同一套控件高度 */
+.search-row .btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+}
+.search-row .btn svg {
+  width: 14px;
+  height: 14px;
+}
